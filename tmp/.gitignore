@@ -1,0 +1,7 @@
+# Ignore all phase plan files except the template and archive
+*
+!.gitignore
+!PHASE_PLAN_TEMPLATE.md
+!archive/
+archive/*
+!archive/.gitkeep

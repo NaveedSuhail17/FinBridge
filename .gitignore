@@ -39,6 +39,4 @@ uploads/
 # Turborepo
 .turbo
 
-# tmp phase plans (keep template + archive)
-tmp/*.md
-!tmp/PHASE_PLAN_TEMPLATE.md
+# tmp/ has its own .gitignore — only template and archive/ are tracked
