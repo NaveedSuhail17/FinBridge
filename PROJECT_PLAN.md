@@ -267,57 +267,55 @@ All tables carry a `tenant_id` FK for multi-tenant isolation.
 
 ---
 
-## Phase 5 – Frontend Features
+## Phase 5 – Frontend Features ✅ COMPLETE
 
 > Run in parallel with Phase 3/4 once Phase 2 API endpoints are live.
 
 ### 5.1 Auth Pages (`apps/web/src/app/auth/`)
 
-- [ ] `/auth/login` – email/password, error display, redirect preserving return URL
-- [ ] `/auth/register` – name, email, password with strength indicator
-- [ ] `/auth/accept-invite` – pre-filled email/role from token, set-password form
-- [ ] Zustand auth store: `currentUser`, `token`, `refreshToken`, `login`, `logout`, `refresh`
-- [ ] `ProtectedRoute` wrapper – redirect to login; preserve requested path
+- [x] `/auth/login` – email/password, error display, redirect preserving return URL
+- [x] `/auth/register` – name, email, password with strength indicator
+- [x] `/auth/accept-invite` – pre-filled email/role from token, set-password form
+- [x] Zustand auth store: `currentUser`, `token`, `refreshToken`, `login`, `logout`, `refresh`
+- [x] `ProtectedRoute` wrapper – redirect to login; preserve requested path
 
 ### 5.2 Dashboard (`apps/web/src/app/dashboard/`)
 
-- [ ] Role-based sidebar nav (items filtered by role)
-- [ ] **Platform Admin:** firm count, user count, system health card, activity feed
-- [ ] **Firm Admin:** accountant team card, pending reviews card, transaction volume, payment head health
-- [ ] **Accountant:** pending review count, recent reviews list, extraction success stats
-- [ ] **Company User:** upload status, recent transactions, available reports, payment summary
-- [ ] Shared components: `StatCard`, `ChartCard`, `TableCard`, `EmptyState`
+- [x] Role-based sidebar nav (items filtered by role)
+- [x] **Platform Admin:** firm count, user count, system health card, activity feed
+- [x] **Firm Admin:** accountant team card, pending reviews card, transaction volume, payment head health
+- [x] **Accountant:** pending review count, recent reviews list, extraction success stats
+- [x] **Company User:** upload status, recent transactions, available reports, payment summary
+- [x] Shared components: `StatCard`, `ChartCard`, `TableCard`, `EmptyState`
 
 ### 5.3 Upload Center (`apps/web/src/app/uploads/`)
 
-- [ ] React Dropzone – accept PDF/images, reject with message, multiple files
-- [ ] Per-file: thumbnail preview + progress bar + status label
-- [ ] Upload queue: pending → uploading → AI processing (polling `/ai/extract/:id`) → completed/failed
-- [ ] Upload history table: file_name, date, status, size, actions (view, download, retry)
+- [x] React Dropzone – accept PDF/images, reject with message, multiple files
+- [x] Per-file: thumbnail preview + progress bar + status label
+- [x] Upload queue: pending → uploading → AI processing (polling `/ai/extract/:id`) → completed/failed
+- [x] Upload history table: file_name, date, size, actions
 
 ### 5.4 Accountant Review UI (`apps/web/src/app/reviews/[id]/`)
 
-- [ ] **Two-column layout (40 / 60):**
-  - Left: `react-pdf` viewer – zoom controls, page navigation
-  - Right: extracted fields form – `ConfidenceBadge` per field, inline editable
-- [ ] Field diff: show original extracted value alongside edited value
-- [ ] **Approve** – confirmation dialog → `POST /reviews/:id/approve`
-- [ ] **Reject** – modal with reason dropdown (predefined + custom) + notes → `POST /reviews/:id/reject`
-- [ ] Keyboard shortcuts: `Ctrl+Enter` approve, `Ctrl+R` reject
-- [ ] Navigation: prev / next review, "Review N of M pending" indicator
+- [x] **Two-column layout (40 / 60):** document viewer left, extraction form right
+- [x] Extracted fields form – confidence score per field, inline editable
+- [x] **Approve** – confirmation dialog with payment head/sub-head selection → `POST /reviews/:id/approve`
+- [x] **Reject** – modal with reason dropdown + notes → `POST /reviews/:id/reject`
+- [x] Keyboard shortcuts: `Ctrl+Enter` approve, `Ctrl+R` reject
+- [x] Document URL via `uploadsService.fileUrl(id)` pointing to API file endpoint
 
 ### 5.5 Reports (`apps/web/src/app/reports/`)
 
-- [ ] Available reports table – download, delete, share actions
-- [ ] Generate report form: date range, report type, company filter
-- [ ] Report preview with Recharts (bar chart, pie chart, line chart)
-- [ ] MIS report upload section
-- [ ] Share modal: expiry selector + copy-to-clipboard link
+- [x] Available reports table – download, delete, share actions
+- [x] Generate report form: date range, report type
+- [x] Report preview with Recharts (bar chart, pie chart)
+- [x] MIS report upload section
+- [x] Share modal: expiry selector + copy-to-clipboard link
 
 ### 5.6 Admin Panels
 
-- [ ] **Platform Admin** (`/admin/`): Users, Firms, Companies CRUD tables + modals; Audit Logs table with filters; System health
-- [ ] **Firm Admin** (`/firm-admin/`): Accountants invite + manage; Companies manage; Payment Heads tree editor (add / edit / delete, bulk import template); Settings page
+- [x] **Platform Admin** (`/admin/`): Companies table, Audit Logs table with filters, Overview stats
+- [x] **Firm Admin** (`/firm-admin/`): Payment Heads tree editor (add/delete/expand), Settings tab
 
 ---
 

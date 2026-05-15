@@ -35,4 +35,18 @@ export const uploadsService = {
   async remove(id: string): Promise<void> {
     await apiClient.delete(`/uploads/${id}`);
   },
+
+  fileUrl(id: string): string {
+    const base =
+      (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) ||
+      'http://localhost:3001/api/v1';
+    return `${base}/uploads/${id}/file`;
+  },
+
+  downloadUrl(id: string): string {
+    const base =
+      (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) ||
+      'http://localhost:3001/api/v1';
+    return `${base}/uploads/${id}/download`;
+  },
 };
