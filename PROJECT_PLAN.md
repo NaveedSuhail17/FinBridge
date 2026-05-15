@@ -246,22 +246,24 @@ All tables carry a `tenant_id` FK for multi-tenant isolation.
 
 ---
 
-## Phase 4 – Shared Frontend Packages
+## Phase 4 – Shared Frontend Packages ✅ Complete
 
 > Run in parallel with Phase 3.
 
-### 4.1 SDK Package (`packages/sdk/`)
+### 4.1 SDK Package (`packages/sdk/`) ✅
 
-- [ ] `api-client.ts` – Axios instance: base URL `/api/v1`, JWT `Authorization` header interceptor, 401 → auto-refresh, `X-Request-Id` header
-- [ ] Domain services: `auth`, `companies`, `uploads`, `reviews`, `transactions`, `payment-heads`, `reports`, `audit`, `users`
-- [ ] React hooks: `useUpload` (progress tracking), `useExtraction` (status polling), `useReview`, `useTransaction`
+- [x] `api-client.ts` – Axios instance: base URL `/api/v1`, JWT `Authorization` header interceptor, 401 → auto-refresh, `X-Request-Id` header
+- [x] Domain services: `auth`, `companies`, `uploads`, `reviews`, `transactions`, `payment-heads`, `reports`, `audit`, `users`, `extraction`
+- [x] React hooks: `useUpload` (progress tracking), `useExtraction` (status polling), `useReview`, `useTransactionList`
+- [x] Zustand auth store (`useAuthStore`) + `useAuth`, `useTenant` hooks colocated in SDK
 
-### 4.2 UI Component Package (`packages/ui/`)
+### 4.2 UI Component Package (`packages/ui/`) ✅
 
-- [ ] shadcn/ui re-exports: Button, Input, Form, Dialog, Table, Badge, Tooltip, Select, DatePicker
-- [ ] Custom components: `ConfidenceBadge`, `UploadZone`, `FilePreview`, `TransactionTable`, `ExtractionForm`, `DashboardCard`, `ActivityFeed`, `NavigationSidebar`, `UserMenu`
-- [ ] Layouts: `MainLayout` (sidebar + top nav), `AuthLayout` (centered), `AdminLayout`
-- [ ] Shared hooks: `useAuth`, `useTenant`, `useDebounce`, `useLocalStorage`
+- [x] shadcn/ui re-exports: Button, Input, Label, Form, Dialog, Table, Badge, Card, Tooltip, Select, DatePicker
+- [x] Custom components: `ConfidenceBadge`, `UploadZone`, `FilePreview`, `TransactionTable`, `ExtractionForm`, `DashboardCard`, `ActivityFeed`, `NavigationSidebar`, `UserMenu`
+- [x] Layouts: `MainLayout` (sidebar + top nav), `AuthLayout` (centered), `AdminLayout`
+- [x] Shared hooks: `useDebounce`, `useLocalStorage` (auth/tenant hooks live in SDK)
+- [x] Tailwind preset + CSS design token variables in `src/styles/globals.css`
 
 ---
 

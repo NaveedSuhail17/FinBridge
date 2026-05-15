@@ -8,13 +8,17 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@finbridge/types": "workspace:*"
+    "@finbridge/types": "workspace:*",
+    "axios": "^1.7.0",
+    "zustand": "^5.0.0"
   },
   "devDependencies": {
     "@finbridge/config": "workspace:*",
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.0.0",
     "typescript": "^5.7.3"
   },
   "peerDependencies": {
-    "axios": "^1.7.0"
+    "react": "^19.0.0"
   }
 }
