@@ -1,0 +1,40 @@
+{
+  "name": "finbridge",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.1.2",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev start:dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\" --ignore-path .prettierignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\" --ignore-path .prettierignore",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
+    "setup": "pnpm install && pnpm db:setup",
+    "db:setup": "pnpm db:migrate && pnpm db:seed",
+    "db:migrate": "pnpm --filter @finbridge/api db:migrate",
+    "db:seed": "pnpm --filter @finbridge/api db:seed",
+    "db:studio": "pnpm --filter @finbridge/api db:studio",
+    "db:reset": "pnpm --filter @finbridge/api db:reset",
+    "docker:up": "docker compose up --build",
+    "docker:up:infra": "docker compose up -d postgres redis",
+    "docker:down": "docker compose down",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.3.0",
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md,yaml,yml,css}": [
+      "prettier --write"
+    ]
+  }
+}

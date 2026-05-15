@@ -1,0 +1,7 @@
+{
+  "extends": "@finbridge/config/typescript/nestjs",
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*"]
+}

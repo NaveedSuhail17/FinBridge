@@ -1,0 +1,10 @@
+{
+  "extends": "@finbridge/config/typescript",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*"]
+}

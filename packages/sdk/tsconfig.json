@@ -1,0 +1,7 @@
+{
+  "extends": "@finbridge/config/typescript/nextjs",
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*"]
+}

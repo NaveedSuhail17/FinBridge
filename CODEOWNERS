@@ -1,0 +1,14 @@
+# Global owners
+* @finbridge-team
+
+# AI extraction — requires careful review
+apps/api/src/ai/ @finbridge-team
+packages/prompts/ @finbridge-team
+
+# Database schema — requires migration review
+prisma/ @finbridge-team
+
+# Infrastructure
+infrastructure/ @finbridge-team
+docker-compose.yml @finbridge-team
+.github/ @finbridge-team
