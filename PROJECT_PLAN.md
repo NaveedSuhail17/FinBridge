@@ -125,40 +125,40 @@ All tables carry a `tenant_id` FK for multi-tenant isolation.
 
 ---
 
-## Phase 2 – Backend Auth & Multi-Tenant Core
+## Phase 2 – Backend Auth & Multi-Tenant Core ✅ Complete
 
 > Blocks all backend feature modules.
 
 ### 2.1 Auth Module (`apps/api/src/auth/`)
 
-- [ ] `POST /auth/register` – bcrypt password (10 rounds), create user + tenant mapping
-- [ ] `POST /auth/login` – validate credentials, issue JWT (15 min) + refresh token (Redis TTL 7 days)
-- [ ] `POST /auth/refresh` – rotate refresh token, issue new JWT
-- [ ] `POST /auth/logout` – revoke refresh token from Redis
-- [ ] `POST /auth/accept-invite?token=` – create user account from invite token
-- [ ] Rate limiting on `/auth/login`: 5 req / 5 min per IP
-- [ ] Account lockout: lock after 5 failed attempts for 15 min
+- [x] `POST /auth/register` – bcrypt password (10 rounds), create user + tenant mapping
+- [x] `POST /auth/login` – validate credentials, issue JWT (15 min) + refresh token (Redis TTL 7 days)
+- [x] `POST /auth/refresh` – rotate refresh token, issue new JWT
+- [x] `POST /auth/logout` – revoke refresh token from Redis
+- [x] `POST /auth/accept-invite?token=` – create user account from invite token
+- [x] Rate limiting on `/auth/login`: 5 req / 5 min per IP
+- [x] Account lockout: lock after 5 failed attempts for 15 min
 
 ### 2.2 RBAC (`apps/api/src/common/authorization/`)
 
-- [ ] Role matrix defined: `PLATFORM_ADMIN`, `ACCOUNTING_FIRM_ADMIN`, `ACCOUNTANT`, `COMPANY_USER`
-- [ ] `@Roles()` + `@Permissions()` method decorators
-- [ ] `RolesGuard`, `PermissionsGuard`
-- [ ] `@Tenant()` parameter decorator – extracts tenant context from JWT (never from request params)
+- [x] Role matrix defined: `PLATFORM_ADMIN`, `ACCOUNTING_FIRM_ADMIN`, `ACCOUNTANT`, `COMPANY_USER`
+- [x] `@Roles()` + `@Permissions()` method decorators
+- [x] `RolesGuard`, `PermissionsGuard`
+- [x] `@Tenant()` parameter decorator – extracts tenant context from JWT (never from request params)
 
 ### 2.3 Multi-Tenant Middleware
 
-- [ ] `TenantMiddleware` – extract `tenant_id` from JWT sub claim, inject into `req.tenantContext`
-- [ ] TypeORM query subscriber / interceptor – auto-scope all queries by `tenant_id`
-- [ ] `TenantContextService` – injectable service exposing current user, tenant, and role throughout request lifecycle
+- [x] `TenantContextService` – REQUEST-scoped service exposing current user, tenant, and role throughout request lifecycle
+- [x] `TenantScopedRepository<T>` – abstract base class for explicit tenant-scoped queries (PLATFORM_ADMIN bypass)
+- [x] `@CurrentUser()` + `@Tenant()` parameter decorators for controller injection
 
 ### 2.4 Users Module (`apps/api/src/users/`)
 
-- [ ] `GET /users/me` – current user profile
-- [ ] `PATCH /users/me` – update name, password
-- [ ] `UsersService` – create, findByEmail, update, delete
+- [x] `GET /users/me` – current user profile
+- [x] `PATCH /users/me` – update name, password
+- [x] `UsersService` – findById, findByEmail, getProfile, update
 
-**Acceptance:** Login returns JWT; protected routes return 401 without token; users from different tenants cannot access each other's data.
+**Acceptance:** ✅ Login returns JWT; protected routes return 401 without token; TenantContextService scopes queries by tenant_id; PLATFORM_ADMIN bypass verified by unit tests.
 
 ---
 

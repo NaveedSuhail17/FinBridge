@@ -242,10 +242,3 @@ tmp/archive/phase-<feature-slug>.md  # completed plan
 See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full agile build plan — 6 phases with task checklists, dependency order, acceptance criteria, and an end-to-end verification checklist. Use this as the primary reference for what to build next and in what order.
 
 ## Useful Docs
-
-- `docs/architecture.md` — system design rationale
-- `docs/ai-instructions.md` — prompt engineering guidelines
-- `docs/api-design.md` — REST endpoint reference
-- `docs/domain-context.md` — business domain and user types
-- `docs/security-guidelines.md` — security practices
-- `finbridge_hackathon_repository_blueprint.md` — original full blueprint
