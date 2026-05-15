@@ -23,6 +23,7 @@
     "@anthropic-ai/sdk": "^0.36.3",
     "@bull-board/api": "^5.21.3",
     "@bull-board/express": "^5.21.3",
+    "@finbridge/prompts": "workspace:*",
     "@finbridge/types": "workspace:*",
     "@nestjs/bull": "^10.2.3",
     "@nestjs/common": "^10.4.15",
@@ -49,7 +50,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.29",
-    "uuid": "^11.0.5"
+    "uuid": "^11.0.5",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@finbridge/config": "workspace:*",

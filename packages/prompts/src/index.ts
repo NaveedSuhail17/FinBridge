@@ -1,4 +1,5 @@
-// Versioned AI prompt templates — populated in Phase 3.4
-// Invoice, statement, and classification prompts will be added here
-
-export {};
+export { INVOICE_EXTRACTION_PROMPT, PROMPT_VERSION } from './invoices/invoice.extraction.v1';
+export {
+  DOCUMENT_CLASSIFICATION_PROMPT,
+  CLASSIFIER_VERSION,
+} from './classification/document-classifier.v1';
