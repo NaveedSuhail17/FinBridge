@@ -9,6 +9,7 @@ import { Transaction } from '../database/entities/transaction.entity';
 import { Notification } from '../database/entities/notification.entity';
 import { ReviewsService } from './reviews.service';
 import { ReviewsController } from './reviews.controller';
+import { ReviewEscalationScheduler } from './review-escalation.scheduler';
 import { AuditModule } from '../audit/audit.module';
 
 @Module({
@@ -24,7 +25,7 @@ import { AuditModule } from '../audit/audit.module';
     ]),
     AuditModule,
   ],
-  providers: [ReviewsService],
+  providers: [ReviewsService, ReviewEscalationScheduler],
   controllers: [ReviewsController],
   exports: [ReviewsService],
 })
