@@ -1,0 +1,49 @@
+{
+  "vendor_name": "CloudBase Technologies",
+  "vendor_address": "Cyber City, Tower B, Floor 8, Gurugram 122002",
+  "invoice_number": "INV-2024-005027",
+  "invoice_date": "2024-02-01",
+  "due_date": "2024-03-02",
+  "line_items": [
+    {
+      "description": "Jira Software — Enterprise (100 users, annual)",
+      "quantity": 1,
+      "unit_price": 38000,
+      "total": 38000
+    },
+    {
+      "description": "Confluence — Enterprise (100 users, annual)",
+      "quantity": 1,
+      "unit_price": 18000,
+      "total": 18000
+    },
+    {
+      "description": "Slack Business+ (50 users, annual)",
+      "quantity": 1,
+      "unit_price": 12000,
+      "total": 12000
+    },
+    {
+      "description": "GitHub Enterprise (50 seats, annual)",
+      "quantity": 1,
+      "unit_price": 12000,
+      "total": 12000
+    }
+  ],
+  "subtotal": 80000,
+  "tax_amount": 14400,
+  "tax_rate": 18,
+  "total_amount": 94400,
+  "currency": "INR",
+  "payment_terms": "Net 30",
+  "bank_details": "Axis Bank | 9200034512367 | UTIB0002456",
+  "notes": null,
+  "confidence": {
+    "vendor_name": 95,
+    "invoice_number": 97,
+    "invoice_date": 96,
+    "total_amount": 94,
+    "line_items": 92,
+    "overall": 95
+  }
+}

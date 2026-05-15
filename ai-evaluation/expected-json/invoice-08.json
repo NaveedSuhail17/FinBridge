@@ -1,0 +1,43 @@
+{
+  "vendor_name": "Bright Digital Media",
+  "vendor_address": "301 Andheri Kurla Road, Andheri East, Mumbai 400093",
+  "invoice_number": "INV-2024-013002",
+  "invoice_date": "2024-03-15",
+  "due_date": "2024-04-14",
+  "line_items": [
+    {
+      "description": "Digital Marketing Campaign — Q2 2024 (Meta + Google)",
+      "quantity": 1,
+      "unit_price": 60000,
+      "total": 60000
+    },
+    {
+      "description": "Influencer Marketing — 5 Micro-Influencers",
+      "quantity": 5,
+      "unit_price": 12000,
+      "total": 60000
+    },
+    {
+      "description": "Creative Content Production (30 assets)",
+      "quantity": 30,
+      "unit_price": 1200,
+      "total": 36000
+    }
+  ],
+  "subtotal": 156000,
+  "tax_amount": 28080,
+  "tax_rate": 18,
+  "total_amount": 184080,
+  "currency": "INR",
+  "payment_terms": "Net 30",
+  "bank_details": "ICICI Bank | 066305009876 | ICIC0000663",
+  "notes": null,
+  "confidence": {
+    "vendor_name": 95,
+    "invoice_number": 97,
+    "invoice_date": 96,
+    "total_amount": 94,
+    "line_items": 92,
+    "overall": 95
+  }
+}

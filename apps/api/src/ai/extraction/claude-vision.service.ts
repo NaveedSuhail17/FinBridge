@@ -24,34 +24,31 @@ export class ClaudeVisionService {
     const fileBuffer = fs.readFileSync(filePath);
     const base64 = fileBuffer.toString('base64');
     const ext = path.extname(filePath).toLowerCase();
-    const mediaType =
-      ext === '.pdf' ? 'application/pdf' : ext === '.png' ? 'image/png' : 'image/jpeg';
+    const isPdf = ext === '.pdf';
+    const imageMediaType = ext === '.png' ? 'image/png' : 'image/jpeg';
 
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
+        // PDFs use type:'document'; images use type:'image' — different Anthropic API shapes
+        const fileContent: Anthropic.MessageParam['content'][0] = isPdf
+          ? ({
+              type: 'document',
+              source: { type: 'base64', media_type: 'application/pdf', data: base64 },
+            } as Anthropic.DocumentBlockParam)
+          : ({
+              type: 'image',
+              source: { type: 'base64', media_type: imageMediaType, data: base64 },
+            } as Anthropic.ImageBlockParam);
+
         const response = await this.client.messages.create({
           model: CLAUDE_MODEL,
           max_tokens: 4096,
           messages: [
             {
               role: 'user',
-              content: [
-                {
-                  type: 'image',
-                  source: {
-                    type: 'base64',
-                    media_type: mediaType as
-                      | 'image/png'
-                      | 'image/jpeg'
-                      | 'image/gif'
-                      | 'image/webp',
-                    data: base64,
-                  },
-                },
-                { type: 'text', text: prompt },
-              ],
+              content: [fileContent, { type: 'text', text: prompt }],
             },
           ],
         });

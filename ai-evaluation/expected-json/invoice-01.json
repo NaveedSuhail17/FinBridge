@@ -1,0 +1,49 @@
+{
+  "vendor_name": "Tech Solutions Pvt Ltd",
+  "vendor_address": "14th Floor, Prestige Tech Park, Outer Ring Road, Bangalore 560103",
+  "invoice_number": "INV-2024-001842",
+  "invoice_date": "2024-01-15",
+  "due_date": "2024-02-14",
+  "line_items": [
+    {
+      "description": "AWS EC2 Reserved Instances (24 months)",
+      "quantity": 4,
+      "unit_price": 28500,
+      "total": 114000
+    },
+    {
+      "description": "AWS S3 Storage (50 TB/month)",
+      "quantity": 1,
+      "unit_price": 12200,
+      "total": 12200
+    },
+    {
+      "description": "AWS CloudFront CDN — Annual Plan",
+      "quantity": 1,
+      "unit_price": 8900,
+      "total": 8900
+    },
+    {
+      "description": "DevOps Managed Services (Monthly)",
+      "quantity": 1,
+      "unit_price": 22000,
+      "total": 22000
+    }
+  ],
+  "subtotal": 157100,
+  "tax_amount": 28278,
+  "tax_rate": 18,
+  "total_amount": 185378,
+  "currency": "INR",
+  "payment_terms": "Net 30",
+  "bank_details": "HDFC Bank | 50100234567890 | HDFC0001234",
+  "notes": null,
+  "confidence": {
+    "vendor_name": 95,
+    "invoice_number": 97,
+    "invoice_date": 96,
+    "total_amount": 94,
+    "line_items": 92,
+    "overall": 95
+  }
+}

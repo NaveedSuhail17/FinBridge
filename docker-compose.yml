@@ -31,6 +31,22 @@ services:
       timeout: 3s
       retries: 5
 
+  # One-time init container: creates DB schema and seeds demo data.
+  # Runs before the api service on every cold start; exits 0 on success.
+  # Safe to re-run — seed is idempotent (upsert-on-conflict pattern).
+  api-init:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.api-init
+    container_name: finbridge-api-init
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/finbridge
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
   api:
     build:
       context: .
@@ -52,6 +68,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      api-init:
+        condition: service_completed_successfully
     volumes:
       - uploads_data:/app/uploads
 

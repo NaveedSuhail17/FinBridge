@@ -1,0 +1,43 @@
+{
+  "vendor_name": "Prime HR Consultants",
+  "vendor_address": "Level 5, Raheja Towers, MG Road, Bangalore 560001",
+  "invoice_number": "INV-2024-009114",
+  "invoice_date": "2024-02-20",
+  "due_date": "2024-03-21",
+  "line_items": [
+    {
+      "description": "Executive Search — Senior Software Engineers (3 positions)",
+      "quantity": 3,
+      "unit_price": 22000,
+      "total": 66000
+    },
+    {
+      "description": "Background Verification Services (per candidate)",
+      "quantity": 3,
+      "unit_price": 3200,
+      "total": 9600
+    },
+    {
+      "description": "Recruitment Process Outsourcing — Q1 Retainer",
+      "quantity": 1,
+      "unit_price": 20600,
+      "total": 20600
+    }
+  ],
+  "subtotal": 96200,
+  "tax_amount": 17316,
+  "tax_rate": 18,
+  "total_amount": 113516,
+  "currency": "INR",
+  "payment_terms": "Net 30",
+  "bank_details": "Kotak Mahindra Bank | 3812000567123 | KKBK0000381",
+  "notes": null,
+  "confidence": {
+    "vendor_name": 95,
+    "invoice_number": 97,
+    "invoice_date": 96,
+    "total_amount": 94,
+    "line_items": 92,
+    "overall": 95
+  }
+}

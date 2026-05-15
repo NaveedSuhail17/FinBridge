@@ -1,0 +1,43 @@
+{
+  "vendor_name": "FastFreight Logistics",
+  "vendor_address": "Warehouse Complex, JNPT Road, Nhava Sheva, Mumbai 400707",
+  "invoice_number": "INV-2024-007841",
+  "invoice_date": "2024-02-10",
+  "due_date": "2024-03-11",
+  "line_items": [
+    {
+      "description": "Inbound Freight — Mumbai to Ahmedabad (FTL, 22T)",
+      "quantity": 3,
+      "unit_price": 4500,
+      "total": 13500
+    },
+    {
+      "description": "Port Handling & Documentation Charges",
+      "quantity": 1,
+      "unit_price": 8200,
+      "total": 8200
+    },
+    {
+      "description": "Customs Clearance — Import (CHA fees)",
+      "quantity": 1,
+      "unit_price": 5300,
+      "total": 5300
+    }
+  ],
+  "subtotal": 27000,
+  "tax_amount": 4860,
+  "tax_rate": 18,
+  "total_amount": 31860,
+  "currency": "INR",
+  "payment_terms": "Net 30",
+  "bank_details": "SBI | 37829456012 | SBIN0005321",
+  "notes": null,
+  "confidence": {
+    "vendor_name": 95,
+    "invoice_number": 97,
+    "invoice_date": 96,
+    "total_amount": 94,
+    "line_items": 92,
+    "overall": 95
+  }
+}

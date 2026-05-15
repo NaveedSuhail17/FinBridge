@@ -319,28 +319,33 @@ All tables carry a `tenant_id` FK for multi-tenant isolation.
 
 ---
 
-## Phase 6 – Demo Assets & Polish
+## Phase 6 – Demo Assets & Polish ✅ COMPLETE
 
 ### 6.1 Demo Assets
 
-- [ ] `demo-assets/invoices/` – 5 realistic sample invoice PDFs/PNGs for live demo
-- [ ] `demo-assets/salary-registers/`, `bank-statements/`, `reports/` – files used by seeder
-- [ ] `presentation/demo-script.md` – step-by-step demo walkthrough for judges
-- [ ] `presentation/architecture-diagrams/` – system architecture diagram (SVG/PNG)
+- [x] `demo-assets/invoices/` – 5 realistic sample invoice PDFs for live demo (generated via `infrastructure/scripts/generate-demo-assets.js`)
+- [x] `demo-assets/salary-registers/`, `bank-statements/`, `reports/` – supporting demo files
+- [x] `presentation/demo-script.md` – step-by-step demo walkthrough for judges
+- [x] `presentation/architecture.md` – system architecture diagram (Mermaid flowcharts)
+
+### 6.1a Bug Fix: Claude Vision PDF Handling
+
+- [x] Fixed `apps/api/src/ai/extraction/claude-vision.service.ts` — PDFs now use `type: 'document'` (Anthropic API requirement); images use `type: 'image'`
 
 ### 6.2 AI Evaluation Dataset
 
-- [ ] `ai-evaluation/sample-invoices/` – 10 test invoice files
-- [ ] `ai-evaluation/expected-json/` – expected extraction output per invoice
-- [ ] Benchmark script – run all 10, log accuracy, field completeness, confidence averages
+- [x] `ai-evaluation/sample-invoices/` – 10 test invoice PDFs (5 from demo-assets + 5 additional)
+- [x] `ai-evaluation/expected-json/` – ground-truth extraction output per invoice (matches `InvoiceExtractionSchema`)
+- [x] `ai-evaluation/benchmark.ts` – benchmark runner with `--dry-run` and `--limit` flags; see `ai-evaluation/README.md`
 
 ### 6.3 One-Command Setup Verification
 
-- [ ] `docker compose up --build` – migrations + seed run automatically on first start
-- [ ] Frontend: `http://localhost:3000`
-- [ ] Backend: `http://localhost:3001`
-- [ ] Swagger: `http://localhost:3001/api/docs`
-- [ ] TypeORM entities at `apps/api/src/database/entities/`
+- [x] `docker compose up --build` – `api-init` service runs schema:sync + seed before `api` starts
+- [x] `infrastructure/docker/Dockerfile.api-init` – dedicated init container (ts-node + source)
+- [x] Frontend: `http://localhost:3000`
+- [x] Backend: `http://localhost:3001`
+- [x] Swagger: `http://localhost:3001/api/docs`
+- [x] TypeORM entities at `apps/api/src/database/entities/`
 
 ---
 

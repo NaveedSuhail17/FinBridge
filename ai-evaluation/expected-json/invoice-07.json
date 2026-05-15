@@ -1,0 +1,37 @@
+{
+  "vendor_name": "SecureNet Services",
+  "vendor_address": "DLF Cyber Hub, Tower D, Gurugram 122002",
+  "invoice_number": "INV-2024-011547",
+  "invoice_date": "2024-03-08",
+  "due_date": "2024-04-07",
+  "line_items": [
+    {
+      "description": "Annual Penetration Testing — Web & Mobile",
+      "quantity": 1,
+      "unit_price": 85000,
+      "total": 85000
+    },
+    {
+      "description": "SOC-as-a-Service (12 months)",
+      "quantity": 12,
+      "unit_price": 8500,
+      "total": 102000
+    }
+  ],
+  "subtotal": 187000,
+  "tax_amount": 33660,
+  "tax_rate": 18,
+  "total_amount": 220660,
+  "currency": "INR",
+  "payment_terms": "Net 30",
+  "bank_details": "Yes Bank | 10520100045678 | YESB0001052",
+  "notes": null,
+  "confidence": {
+    "vendor_name": 95,
+    "invoice_number": 97,
+    "invoice_date": 96,
+    "total_amount": 94,
+    "line_items": 92,
+    "overall": 95
+  }
+}

@@ -40,3 +40,8 @@ uploads/
 .turbo
 
 # tmp/ has its own .gitignore — only template and archive/ are tracked
+
+# AI evaluation generator artifact (intermediate data file)
+ai-evaluation/.invoice-data.json
+
+FinBridge_Hackathon_Problem_Statement.pdf
