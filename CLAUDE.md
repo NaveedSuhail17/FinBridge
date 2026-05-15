@@ -13,7 +13,7 @@ FinBridge is an AI-powered multi-tenant financial data exchange platform for acc
 | Layer    | Tech                                                                                                                    |
 | -------- | ----------------------------------------------------------------------------------------------------------------------- |
 | Frontend | Next.js 15 (App Router), TypeScript, Tailwind CSS + shadcn/ui, Zustand, React Hook Form + Zod, TanStack Table, Recharts |
-| Backend  | NestJS, TypeScript, Prisma + PostgreSQL, BullMQ + Redis, Anthropic Claude Vision API, Swagger/OpenAPI                   |
+| Backend  | NestJS, TypeScript, TypeORM + PostgreSQL, BullMQ + Redis, Anthropic Claude Vision API, Swagger/OpenAPI                  |
 | Monorepo | Turborepo, pnpm workspaces                                                                                              |
 | Infra    | Docker + Docker Compose, GitHub Actions, Husky + lint-staged                                                            |
 
@@ -30,7 +30,6 @@ finbridge/
 │   ├── config/           # ESLint & TypeScript configs
 │   ├── prompts/          # Versioned AI prompt templates
 │   └── sdk/              # API SDK for frontend consumption
-├── prisma/               # schema.prisma, seed.ts, migrations/
 ├── infrastructure/       # docker/, nginx/, scripts/
 ├── docs/                 # Architecture & domain docs
 ├── tmp/                  # Phase plan files (gitignored) — see Phase Plan Method below
@@ -47,7 +46,7 @@ finbridge/
 pnpm install
 cp .env.example .env
 docker-compose up -d          # start postgres + redis
-pnpm db:migrate               # run prisma migrations
+pnpm db:schema:sync           # sync TypeORM schema to DB
 pnpm db:seed                  # seed demo accounts
 ```
 
@@ -73,8 +72,11 @@ pnpm test --coverage
 ### Database
 
 ```bash
-pnpm db:studio                # Prisma Studio GUI
-pnpm db:reset                 # dev only — destroys data
+pnpm db:schema:sync           # sync TypeORM schema to DB
+pnpm db:seed                  # seed demo data
+pnpm db:migrate               # run pending TypeORM migrations
+pnpm db:migrate:generate      # generate migration from entity changes
+pnpm db:migrate:revert        # revert last migration
 ```
 
 ### Env variables
@@ -93,7 +95,7 @@ PORT=3001
 
 ### Multi-Tenant Isolation
 
-Three tenant levels: `PLATFORM` > `ACCOUNTING_FIRM` > `COMPANY`. Every database table carries `tenant_id`. **Critical rule:** never read tenant context from request parameters — always extract from the JWT in middleware, then inject via a `@Tenant()` decorator so every Prisma query is automatically scoped.
+Three tenant levels: `PLATFORM` > `ACCOUNTING_FIRM` > `COMPANY`. Every database table carries `tenant_id`. **Critical rule:** never read tenant context from request parameters — always extract from the JWT in middleware, then inject via a `@Tenant()` decorator so every TypeORM query is automatically scoped.
 
 ### AI Extraction Pipeline
 

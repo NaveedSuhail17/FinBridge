@@ -36,8 +36,6 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 COPY --from=builder --chown=nestjs:nodejs /app/apps/api/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/apps/api/node_modules ./node_modules
-COPY --from=builder --chown=nestjs:nodejs /app/node_modules/.prisma ./.prisma
-
 RUN mkdir -p uploads && chown nestjs:nodejs uploads
 
 USER nestjs

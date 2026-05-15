@@ -55,7 +55,7 @@ Phase 0 (Monorepo & Infra)
 ### 0.3 App Scaffolding
 
 - [ ] `apps/web` – Next.js 15 (App Router, TypeScript strict, Tailwind CSS, shadcn/ui)
-- [ ] `apps/api` – NestJS (TypeScript strict, Swagger/OpenAPI, class-validator, Prisma)
+- [ ] `apps/api` – NestJS (TypeScript strict, Swagger/OpenAPI, class-validator, TypeORM)
 - [ ] `packages/types/` – shared TypeScript interfaces package
 - [ ] `packages/ui/` – shared UI components package
 - [ ] `packages/sdk/` – API SDK package
@@ -77,7 +77,7 @@ Phase 0 (Monorepo & Infra)
 ## Phase 1 – Database Schema + Shared Types ✅ Complete
 
 > Blocks all backend modules.  
-> **ORM:** TypeORM (switched from Prisma due to CLI workspace issues). Schema in `apps/api/src/database/entities/`.
+> **ORM:** TypeORM (`@nestjs/typeorm`, `typeorm@^0.3.29`). Entities in `apps/api/src/database/entities/`.
 
 ### 1.1 TypeORM Schema (`apps/api/src/database/entities/`)
 
@@ -149,7 +149,7 @@ All tables carry a `tenant_id` FK for multi-tenant isolation.
 ### 2.3 Multi-Tenant Middleware
 
 - [ ] `TenantMiddleware` – extract `tenant_id` from JWT sub claim, inject into `req.tenantContext`
-- [ ] Prisma extension / middleware – auto-scope all queries by `tenant_id`
+- [ ] TypeORM query subscriber / interceptor – auto-scope all queries by `tenant_id`
 - [ ] `TenantContextService` – injectable service exposing current user, tenant, and role throughout request lifecycle
 
 ### 2.4 Users Module (`apps/api/src/users/`)
@@ -341,7 +341,7 @@ All tables carry a `tenant_id` FK for multi-tenant isolation.
 - [ ] Frontend: `http://localhost:3000`
 - [ ] Backend: `http://localhost:3001`
 - [ ] Swagger: `http://localhost:3001/api/docs`
-- [ ] Prisma Studio: `http://localhost:5555`
+- [ ] TypeORM entities at `apps/api/src/database/entities/`
 
 ---
 
@@ -373,11 +373,3 @@ All tables carry a `tenant_id` FK for multi-tenant isolation.
 - [ ] Accountant approves review → Transaction created → visible in Transactions + Reports
 - [ ] Swagger at `/api/docs` shows all endpoints with JWT auth
 - [ ] CI pipeline (lint + test + build) passes on GitHub
-
----
-
-## ORM Note
-
-Originally planned with Prisma. Switched to **TypeORM** (`@nestjs/typeorm`, `typeorm@^0.3.29`) during Phase 1
-due to Prisma CLI auto-update loop breaking in the pnpm workspace context. References to `prisma/` paths in
-Phase 2+ should be read as `apps/api/src/database/` with TypeORM equivalents.

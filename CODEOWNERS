@@ -6,7 +6,7 @@ apps/api/src/ai/ @finbridge-team
 packages/prompts/ @finbridge-team
 
 # Database schema — requires migration review
-prisma/ @finbridge-team
+apps/api/src/database/ @finbridge-team
 
 # Infrastructure
 infrastructure/ @finbridge-team

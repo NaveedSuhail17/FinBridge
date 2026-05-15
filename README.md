@@ -14,12 +14,12 @@ FinBridge automates invoice scanning using Claude Vision, routes extracted trans
 
 ## Tech Stack
 
-| Layer    | Tech                                                                     |
-| -------- | ------------------------------------------------------------------------ |
-| Frontend | Next.js 15 (App Router), TypeScript, Tailwind CSS, shadcn/ui, Zustand    |
-| Backend  | NestJS, Prisma + PostgreSQL, BullMQ + Redis, Anthropic Claude Vision API |
-| Monorepo | Turborepo, pnpm workspaces                                               |
-| Infra    | Docker + Docker Compose, GitHub Actions                                  |
+| Layer    | Tech                                                                      |
+| -------- | ------------------------------------------------------------------------- |
+| Frontend | Next.js 15 (App Router), TypeScript, Tailwind CSS, shadcn/ui, Zustand     |
+| Backend  | NestJS, TypeORM + PostgreSQL, BullMQ + Redis, Anthropic Claude Vision API |
+| Monorepo | Turborepo, pnpm workspaces                                                |
+| Infra    | Docker + Docker Compose, GitHub Actions                                   |
 
 ## Quick Start
 
@@ -42,8 +42,7 @@ pnpm dev
 
 Frontend: http://localhost:3000  
 Backend API: http://localhost:3001  
-Swagger docs: http://localhost:3001/api/docs  
-Prisma Studio: `pnpm db:studio`
+Swagger docs: http://localhost:3001/api/docs
 
 ## Demo Accounts
 
@@ -66,7 +65,6 @@ finbridge/
 │   ├── sdk/          # API client SDK
 │   ├── prompts/      # Versioned AI prompt templates
 │   └── config/       # Shared ESLint + TypeScript configs
-├── prisma/           # Schema, migrations, seed
 ├── infrastructure/   # Dockerfiles, nginx, scripts
 └── docker-compose.yml
 ```
