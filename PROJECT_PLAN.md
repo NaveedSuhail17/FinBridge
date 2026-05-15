@@ -74,11 +74,12 @@ Phase 0 (Monorepo & Infra)
 
 ---
 
-## Phase 1 – Database Schema + Shared Types
+## Phase 1 – Database Schema + Shared Types ✅ Complete
 
-> Blocks all backend modules.
+> Blocks all backend modules.  
+> **ORM:** TypeORM (switched from Prisma due to CLI workspace issues). Schema in `apps/api/src/database/entities/`.
 
-### 1.1 Prisma Schema (`prisma/schema.prisma`)
+### 1.1 TypeORM Schema (`apps/api/src/database/entities/`)
 
 All tables carry a `tenant_id` FK for multi-tenant isolation.
 
@@ -105,22 +106,22 @@ All tables carry a `tenant_id` FK for multi-tenant isolation.
 | `AuditLog`                               | tenant_id, user_id, entity_type, entity_id, action, changes (JSON), ip_address            |
 | `Notification`                           | tenant_id, user_id, type, message, read                                                   |
 
-### 1.2 Migrations & Seed (`prisma/seed.ts`)
+### 1.2 Schema Sync & Seed (`apps/api/src/database/seed.ts`)
 
-- [ ] Initial migration from full schema
-- [ ] Seed: 1 Platform Admin (`admin@finbridge.com / Password@123`)
-- [ ] Seed: 2 Accounting Firms, 3 Companies, 5 Accountants (`accountant@finbridge.com / Password@123`)
-- [ ] Seed: 1 Company User (`user@company.com / Password@123`)
-- [ ] Seed: Default PaymentHead trees for Manufacturing, IT Services, Consulting, Retail
-- [ ] Seed: 20 sample invoices in mixed states (PENDING, APPROVED, REJECTED) with extracted data
+- [x] Schema synced via `pnpm db:schema:sync`
+- [x] Seed: 1 Platform Admin (`admin@finbridge.com / Password@123`)
+- [x] Seed: 2 Accounting Firms, 3 Companies, 5 Accountants (`accountant@finbridge.com / Password@123`)
+- [x] Seed: 1 Company User (`user@company.com / Password@123`)
+- [x] Seed: Default PaymentHead trees for Manufacturing, IT Services, Consulting, Retail
+- [x] Seed: 20 sample invoices in mixed states (PENDING, APPROVED, REJECTED) with extracted data
 
 ### 1.3 Shared Types Package (`packages/types/`)
 
-- [ ] `entities.ts` – TS interfaces mirroring all Prisma entities
-- [ ] `api-responses.ts` – `ApiResponse<T>`, `PaginatedResponse<T>`, `ErrorResponse`
-- [ ] `domain.ts` – enums: `UserRole`, `TenantType`, `TransactionStatus`, `ReviewStatus`, `FileType`, `ExtractionStatus`
+- [x] `entities.ts` – TS interfaces mirroring all 22 TypeORM entities
+- [x] `api-responses.ts` – `ApiResponse<T>`, `PaginatedResponse<T>`, `ErrorResponse`
+- [x] `domain.ts` – enums: `TenantType`, `BusinessType`, `TransactionStatus`, `ReviewStatus`, `FileType`, `ExtractionStatus`, `AuditAction`, `NotificationType`
 
-**Acceptance:** `pnpm db:migrate && pnpm db:seed` completes without error; Prisma Studio shows all tables and seeded records.
+**Acceptance:** ✅ `pnpm db:seed` completes; all 22 tables in DB; `pnpm lint` passes; `tsc --noEmit` clean.
 
 ---
 
@@ -351,8 +352,8 @@ All tables carry a `tenant_id` FK for multi-tenant isolation.
 | `pnpm-workspace.yaml`                                | 0     | Workspace package roots         |
 | `turbo.json`                                         | 0     | Turborepo pipeline config       |
 | `docker-compose.yml`                                 | 0     | Local PostgreSQL + Redis        |
-| `prisma/schema.prisma`                               | 1     | Full database schema            |
-| `prisma/seed.ts`                                     | 1     | Demo seed data                  |
+| `apps/api/src/database/entities/`                    | 1     | TypeORM entities (22 total)     |
+| `apps/api/src/database/seed.ts`                      | 1     | Demo seed data                  |
 | `apps/api/src/auth/`                                 | 2     | JWT auth module                 |
 | `apps/api/src/common/authorization/`                 | 2     | RBAC guards + decorators        |
 | `apps/api/src/ai/`                                   | 3.4   | AI extraction pipeline          |
@@ -372,3 +373,11 @@ All tables carry a `tenant_id` FK for multi-tenant isolation.
 - [ ] Accountant approves review → Transaction created → visible in Transactions + Reports
 - [ ] Swagger at `/api/docs` shows all endpoints with JWT auth
 - [ ] CI pipeline (lint + test + build) passes on GitHub
+
+---
+
+## ORM Note
+
+Originally planned with Prisma. Switched to **TypeORM** (`@nestjs/typeorm`, `typeorm@^0.3.29`) during Phase 1
+due to Prisma CLI auto-update loop breaking in the pnpm workspace context. References to `prisma/` paths in
+Phase 2+ should be read as `apps/api/src/database/` with TypeORM equivalents.

@@ -1,26 +1,14 @@
-export enum UserRole {
-  PLATFORM_ADMIN = 'PLATFORM_ADMIN',
-  ACCOUNTING_FIRM_ADMIN = 'ACCOUNTING_FIRM_ADMIN',
-  ACCOUNTANT = 'ACCOUNTANT',
-  COMPANY_USER = 'COMPANY_USER',
-}
-
 export enum TenantType {
   PLATFORM = 'PLATFORM',
   ACCOUNTING_FIRM = 'ACCOUNTING_FIRM',
   COMPANY = 'COMPANY',
 }
 
-export enum TransactionStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-}
-
-export enum ReviewStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
+export enum BusinessType {
+  MANUFACTURING = 'MANUFACTURING',
+  IT_SERVICES = 'IT_SERVICES',
+  CONSULTING = 'CONSULTING',
+  RETAIL = 'RETAIL',
 }
 
 export enum ExtractionStatus {
@@ -31,19 +19,24 @@ export enum ExtractionStatus {
   FAILED = 'FAILED',
 }
 
+export enum ReviewStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
+export enum TransactionStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
 export enum FileType {
   INVOICE = 'INVOICE',
   BANK_STATEMENT = 'BANK_STATEMENT',
   SALARY_REGISTER = 'SALARY_REGISTER',
   LEDGER = 'LEDGER',
   MIS_REPORT = 'MIS_REPORT',
-}
-
-export enum BusinessType {
-  MANUFACTURING = 'MANUFACTURING',
-  IT_SERVICES = 'IT_SERVICES',
-  CONSULTING = 'CONSULTING',
-  RETAIL = 'RETAIL',
 }
 
 export enum AuditAction {

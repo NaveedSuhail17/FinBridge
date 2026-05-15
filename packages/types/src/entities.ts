@@ -7,12 +7,15 @@ import type {
   FileType,
   BusinessType,
   AuditAction,
+  NotificationType,
 } from './domain';
 
-export interface User {
+export interface PlatformUser {
   id: string;
   email: string;
+  passwordHash: string;
   name: string;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +25,35 @@ export interface Tenant {
   type: TenantType;
   name: string;
   parentTenantId: string | null;
+  isActive: boolean;
+  createdAt: Date;
+}
+
+export interface Role {
+  id: string;
+  name: UserRole;
+  description: string | null;
+  createdAt: Date;
+}
+
+export interface Permission {
+  id: string;
+  name: string;
+  action: string;
+  resource: string;
+  createdAt: Date;
+}
+
+export interface RolePermission {
+  roleId: string;
+  permissionId: string;
+}
+
+export interface UserTenant {
+  id: string;
+  userId: string;
+  tenantId: string;
+  roleId: string;
   createdAt: Date;
 }
 
@@ -32,7 +64,9 @@ export interface AccountingFirm {
   gstNumber: string | null;
   contactEmail: string;
   contactPhone: string | null;
+  address: string | null;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Company {
@@ -43,7 +77,10 @@ export interface Company {
   gstNumber: string | null;
   businessType: BusinessType;
   contactEmail: string;
+  contactPhone: string | null;
+  address: string | null;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Upload {
@@ -64,6 +101,7 @@ export interface ExtractionJob {
   uploadId: string;
   status: ExtractionStatus;
   promptVersion: string;
+  errorMessage: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -78,6 +116,15 @@ export interface ExtractionResult {
   createdAt: Date;
 }
 
+export interface ExtractionRevision {
+  id: string;
+  extractionResultId: string;
+  revisionNumber: number;
+  correctedData: Record<string, unknown>;
+  correctedBy: string;
+  createdAt: Date;
+}
+
 export interface Invoice {
   id: string;
   tenantId: string;
@@ -86,9 +133,12 @@ export interface Invoice {
   invoiceNumber: string | null;
   invoiceDate: Date | null;
   amount: number | null;
+  subtotal: number | null;
+  taxAmount: number | null;
   currency: string | null;
   status: TransactionStatus;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Review {
@@ -98,8 +148,20 @@ export interface Review {
   reviewedBy: string | null;
   status: ReviewStatus;
   rejectionReason: string | null;
+  notes: string | null;
   createdAt: Date;
   completedAt: Date | null;
+  escalatedAt: Date | null;
+}
+
+export interface ReviewHistory {
+  id: string;
+  reviewId: string;
+  fieldName: string;
+  originalValue: string | null;
+  newValue: string | null;
+  changedBy: string;
+  createdAt: Date;
 }
 
 export interface Transaction {
@@ -115,6 +177,7 @@ export interface Transaction {
   status: TransactionStatus;
   notes: string | null;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface PaymentHead {
@@ -124,6 +187,7 @@ export interface PaymentHead {
   name: string;
   description: string | null;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface PaymentSubHead {
@@ -133,6 +197,25 @@ export interface PaymentSubHead {
   code: string;
   name: string;
   description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface BusinessTypeTemplate {
+  id: string;
+  businessType: BusinessType;
+  defaultTree: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MISReport {
+  id: string;
+  tenantId: string;
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+  uploadedBy: string;
   createdAt: Date;
 }
 
@@ -145,5 +228,15 @@ export interface AuditLog {
   action: AuditAction;
   changes: Record<string, unknown> | null;
   ipAddress: string | null;
+  createdAt: Date;
+}
+
+export interface Notification {
+  id: string;
+  tenantId: string;
+  userId: string;
+  type: NotificationType;
+  message: string;
+  read: boolean;
   createdAt: Date;
 }
