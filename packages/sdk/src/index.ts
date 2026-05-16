@@ -15,7 +15,7 @@ export { authService } from './services/auth.service';
 export type { LoginDto, RegisterDto, AcceptInviteDto } from './services/auth.service';
 
 export { usersService } from './services/users.service';
-export type { UserProfile, UpdateUserDto } from './services/users.service';
+export type { UserProfile, UpdateUserDto, AdminUserEntry } from './services/users.service';
 
 export { companiesService } from './services/companies.service';
 export type {
