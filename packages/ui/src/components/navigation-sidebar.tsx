@@ -41,13 +41,14 @@ export function NavigationSidebar({
         className,
       )}
     >
-      {logo && (
-        <div
-          className={cn('flex h-16 items-center border-b px-4', collapsed && 'justify-center px-0')}
-        >
-          {logo}
-        </div>
-      )}
+      <div
+        className={cn(
+          'flex h-16 flex-shrink-0 items-center border-b',
+          collapsed ? 'justify-center px-0' : 'px-4',
+        )}
+      >
+        {!collapsed && logo}
+      </div>
 
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-1 px-2">

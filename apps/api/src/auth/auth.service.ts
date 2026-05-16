@@ -225,9 +225,8 @@ export class AuthService {
         email: user.email,
         name: user.name,
         tenantId: tenant.id,
-        tenantName: tenant.name,
-        roleId: role.id,
-        roleName: role.name,
+        tenantType: tenant.type,
+        role: role.name,
       },
     };
   }
