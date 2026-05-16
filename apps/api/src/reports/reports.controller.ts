@@ -124,18 +124,35 @@ export class ReportsController {
   }
 
   @Get(':id/download')
-  @ApiOperation({ summary: 'Download a MIS report file' })
+  @ApiOperation({ summary: 'Download a MIS or generated report' })
   async download(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
     @Res() res: Response,
   ) {
-    const report = await this.reportsService.findById(id, user.tenantId);
-    if (!fs.existsSync(report.filePath)) {
-      res.status(404).json({ success: false, message: 'File not found on disk' });
+    // Try uploaded MIS report first
+    try {
+      const misReport = await this.reportsService.findById(id, user.tenantId);
+      if (!fs.existsSync(misReport.filePath)) {
+        res.status(404).json({ success: false, message: 'File not found on disk' });
+        return;
+      }
+      res.download(misReport.filePath, misReport.fileName);
       return;
+    } catch {
+      // Not a MIS report — fall through to generated report
     }
-    res.download(report.filePath, report.fileName);
+
+    // Try in-memory generated report
+    try {
+      const generated = this.reportsService.getGeneratedReport(id, user.tenantId);
+      const filename = `report-${generated.type.toLowerCase()}-${generated.id.slice(0, 8)}.json`;
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(JSON.stringify(generated.data, null, 2));
+    } catch {
+      res.status(404).json({ success: false, message: 'Report not found' });
+    }
   }
 
   @Post(':id/share')
