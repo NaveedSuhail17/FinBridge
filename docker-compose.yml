@@ -35,6 +35,7 @@ services:
   # Runs before the api service on every cold start; exits 0 on success.
   # Safe to re-run — seed is idempotent (upsert-on-conflict pattern).
   api-init:
+    image: finbridge-api-init:latest
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile.api-init
@@ -50,6 +51,7 @@ services:
     restart: 'no'
 
   api:
+    image: finbridge-api:latest
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile.api
@@ -82,6 +84,7 @@ services:
       start_period: 40s
 
   web:
+    image: finbridge-web:latest
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile.web
