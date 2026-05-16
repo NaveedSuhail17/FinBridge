@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { reviewsService, paymentHeadsService, uploadsService } from '@finbridge/sdk';
+import { reviewsService, paymentHeadsService, uploadsService, useAuthStore } from '@finbridge/sdk';
 import type { ReviewDetail, ApproveReviewDto, RejectReviewDto } from '@finbridge/sdk';
+import { UserRole } from '@finbridge/types';
 import {
   ExtractionForm,
   Button,
@@ -151,8 +152,12 @@ const BANK_TXN_COLUMNS = [
   { key: 'suggested_head_name', label: 'Suggested Head' },
 ];
 
+const REVIEWER_ROLES: UserRole[] = [UserRole.ACCOUNTING_FIRM_ADMIN, UserRole.ACCOUNTANT];
+
 export function ReviewDetailClient({ id }: { id: string }) {
   const router = useRouter();
+  const currentUser = useAuthStore((s) => s.user);
+  const canReview = currentUser ? REVIEWER_ROLES.includes(currentUser.role) : false;
   const [review, setReview] = useState<ReviewDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -308,7 +313,7 @@ export function ReviewDetailClient({ id }: { id: string }) {
   const subHeads = paymentHeads.find((h) => h.id === selectedHead)?.subHeads ?? [];
 
   return (
-    <ProtectedRoute allowedRoles={['ACCOUNTING_FIRM_ADMIN', 'ACCOUNTANT']}>
+    <ProtectedRoute allowedRoles={['ACCOUNTING_FIRM_ADMIN', 'ACCOUNTANT', 'COMPANY_USER']}>
       <AppShell>
         <div className="flex flex-col h-full gap-4">
           <div className="flex items-center justify-between shrink-0">
@@ -320,24 +325,26 @@ export function ReviewDetailClient({ id }: { id: string }) {
               <Badge variant="secondary">{review.status}</Badge>
               {review.escalatedAt && <Badge variant="destructive">Escalated</Badge>}
             </div>
-            <div className="flex items-center gap-2">
-              {Object.keys(editedFields).length > 0 && (
-                <Button variant="outline" size="sm" onClick={handleSaveEdits}>
-                  <Pencil className="h-3.5 w-3.5 mr-1" />
-                  Save Edits
+            {canReview && (
+              <div className="flex items-center gap-2">
+                {Object.keys(editedFields).length > 0 && (
+                  <Button variant="outline" size="sm" onClick={handleSaveEdits}>
+                    <Pencil className="h-3.5 w-3.5 mr-1" />
+                    Save Edits
+                  </Button>
+                )}
+                <Button variant="destructive" size="sm" onClick={() => setShowRejectDialog(true)}>
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  Reject
+                  <span className="ml-1.5 text-xs opacity-60">Ctrl+R</span>
                 </Button>
-              )}
-              <Button variant="destructive" size="sm" onClick={() => setShowRejectDialog(true)}>
-                <X className="h-3.5 w-3.5 mr-1" />
-                Reject
-                <span className="ml-1.5 text-xs opacity-60">Ctrl+R</span>
-              </Button>
-              <Button size="sm" onClick={() => setShowApproveDialog(true)}>
-                <Check className="h-3.5 w-3.5 mr-1" />
-                Approve
-                <span className="ml-1.5 text-xs opacity-60">Ctrl+Enter</span>
-              </Button>
-            </div>
+                <Button size="sm" onClick={() => setShowApproveDialog(true)}>
+                  <Check className="h-3.5 w-3.5 mr-1" />
+                  Approve
+                  <span className="ml-1.5 text-xs opacity-60">Ctrl+Enter</span>
+                </Button>
+              </div>
+            )}
           </div>
 
           {actionError && (

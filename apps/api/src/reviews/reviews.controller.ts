@@ -42,7 +42,9 @@ export class ReviewsController {
   @Get(':id')
   @ApiOperation({ summary: 'Get review with extraction data, file path, and per-field confidence' })
   async findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    return { success: true, data: await this.reviewsService.findOne(id, user.tenantId) };
+    const review = await this.reviewsService.findOne(id, user.tenantId);
+    const upload = review.extractionResult?.extractionJob?.upload ?? null;
+    return { success: true, data: { ...review, upload } };
   }
 
   @Post(':id/approve')

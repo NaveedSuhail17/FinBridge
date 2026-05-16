@@ -88,8 +88,9 @@ export class ReviewsService {
   }
 
   async findOne(id: string, tenantId: string): Promise<Review> {
+    const tenantIds = await this.resolveTenantIds(tenantId);
     const review = await this.reviewRepo.findOne({
-      where: { id, tenantId },
+      where: { id, tenantId: In(tenantIds) },
       relations: [
         'extractionResult',
         'extractionResult.extractionJob',
