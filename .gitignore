@@ -33,8 +33,8 @@ Thumbs.db
 # Testing
 coverage
 
-# Uploads (local file storage)
-uploads/
+# Uploads (local file storage — runtime directory, not source code)
+apps/api/uploads/
 
 # Turborepo
 .turbo
