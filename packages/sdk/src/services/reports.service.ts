@@ -50,11 +50,20 @@ export const reportsService = {
     return data;
   },
 
-  downloadUrl(id: string): string {
-    const base =
-      (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) ||
-      'http://localhost:3001/api/v1';
-    return `${base}/reports/${id}/download`;
+  async download(id: string): Promise<void> {
+    const response = await apiClient.get(`/reports/${id}/download`, { responseType: 'blob' });
+    const contentDisposition = response.headers['content-disposition'] as string | undefined;
+    let filename = `report-${id}`;
+    if (contentDisposition) {
+      const match = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+      if (match?.[1]) filename = match[1].replace(/['"]/g, '');
+    }
+    const url = URL.createObjectURL(new Blob([response.data as BlobPart]));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   },
 
   async share(id: string, dto: ShareReportDto): Promise<ShareLink> {

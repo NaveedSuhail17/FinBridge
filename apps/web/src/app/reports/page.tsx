@@ -373,10 +373,12 @@ export default function ReportsPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button size="sm" variant="ghost" asChild>
-                            <a href={reportsService.downloadUrl(r.id)} download>
-                              <Download className="h-3.5 w-3.5" />
-                            </a>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => reportsService.download(r.id)}
+                          >
+                            <Download className="h-3.5 w-3.5" />
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => setShareId(r.id)}>
                             <Share2 className="h-3.5 w-3.5" />
