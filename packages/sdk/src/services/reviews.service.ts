@@ -42,10 +42,11 @@ export interface PendingReviewsResponse {
 
 export const reviewsService = {
   async listPending(page = 1, limit = 20): Promise<PendingReviewsResponse> {
-    const { data, ...rest } = await apiClient.get<Review[]>('/reviews/pending', {
-      params: { page, limit },
-    });
-    return { data, ...(rest as unknown as { meta: PaginatedMeta }) };
+    const { data } = await apiClient.get<{ data: Review[]; meta: PaginatedMeta }>(
+      '/reviews/pending',
+      { params: { page, limit } },
+    );
+    return data as PendingReviewsResponse;
   },
 
   async get(id: string): Promise<ReviewDetail> {

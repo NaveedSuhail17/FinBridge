@@ -232,11 +232,14 @@ export function ReviewDetailClient({ id }: { id: string }) {
   };
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.ctrlKey && e.key === 'Enter') {
+    const tag = (e.target as HTMLElement).tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable)
+      return;
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
       setShowApproveDialog(true);
     }
-    if (e.ctrlKey && e.key === 'r') {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
       e.preventDefault();
       setShowRejectDialog(true);
     }
@@ -345,7 +348,7 @@ export function ReviewDetailClient({ id }: { id: string }) {
               <div className="p-3 border-b bg-muted/40 shrink-0">
                 <p className="text-sm font-medium">{review.upload?.fileName ?? 'Document'}</p>
                 <p className="text-xs text-muted-foreground">
-                  Confidence: {((review.extractionResult?.confidenceScore ?? 0) * 100).toFixed(0)}%
+                  Confidence: {(review.extractionResult?.confidenceScore ?? 0).toFixed(0)}%
                 </p>
               </div>
               <div className="flex-1 overflow-hidden">

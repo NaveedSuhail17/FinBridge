@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@finbridge/sdk';
@@ -16,8 +16,12 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get('returnUrl') ?? '/dashboard';
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isAuthenticated) router.replace('/dashboard');
+  }, [isAuthenticated, router]);
 
   const {
     register,

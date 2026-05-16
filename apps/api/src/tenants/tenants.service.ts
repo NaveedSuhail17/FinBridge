@@ -29,9 +29,13 @@ export class TenantsService {
     });
   }
 
-  async findOne(id: string): Promise<Tenant> {
+  async findOne(id: string, actorTenantId?: string | null): Promise<Tenant> {
     const tenant = await this.tenantRepo.findOneBy({ id });
     if (!tenant) throw new NotFoundException('Tenant not found');
+    // Non-platform callers can only see their own tenant or direct children
+    if (actorTenantId && tenant.id !== actorTenantId && tenant.parentTenantId !== actorTenantId) {
+      throw new NotFoundException('Tenant not found');
+    }
     return tenant;
   }
 

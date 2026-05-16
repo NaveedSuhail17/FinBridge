@@ -30,9 +30,12 @@ export class AccountingFirmsService {
     return this.firmRepo.findBy({ tenantId });
   }
 
-  async findOne(id: string): Promise<AccountingFirm> {
+  async findOne(id: string, actorTenantId?: string | null): Promise<AccountingFirm> {
     const firm = await this.firmRepo.findOneBy({ id });
     if (!firm) throw new NotFoundException('Accounting firm not found');
+    if (actorTenantId && firm.tenantId !== actorTenantId) {
+      throw new NotFoundException('Accounting firm not found');
+    }
     return firm;
   }
 
@@ -81,7 +84,7 @@ export class AccountingFirmsService {
     actorId: string,
     actorTenantId: string,
   ): Promise<AccountingFirm> {
-    const firm = await this.findOne(id);
+    const firm = await this.findOne(id, actorTenantId);
     Object.assign(firm, dto);
     const saved = await this.firmRepo.save(firm);
 
@@ -103,7 +106,7 @@ export class AccountingFirmsService {
     actorId: string,
     actorTenantId: string,
   ): Promise<{ inviteToken: string }> {
-    const firm = await this.findOne(firmId);
+    const firm = await this.findOne(firmId, actorTenantId);
 
     const token = uuidv4();
     const payload = JSON.stringify({

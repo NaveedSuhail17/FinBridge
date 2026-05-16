@@ -19,8 +19,10 @@ export interface AuditLogListResponse {
 
 export const auditService = {
   async list(filters: AuditLogFilters = {}): Promise<AuditLogListResponse> {
-    const response = await apiClient.get<AuditLog[]>('/audit-logs', { params: filters });
-    return response.data as unknown as AuditLogListResponse;
+    const { data } = await apiClient.get<{ data: AuditLog[]; meta: PaginatedMeta }>('/audit-logs', {
+      params: filters,
+    });
+    return data as AuditLogListResponse;
   },
 
   exportCsvUrl(filters: AuditLogFilters = {}): string {

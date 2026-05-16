@@ -1,6 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, FindOptionsWhere, Like } from 'typeorm';
+import { Repository, Between, Like } from 'typeorm';
+
+const ALLOWED_SORT_COLS = ['transactionDate', 'amount', 'vendorName', 'createdAt'] as const;
+type AllowedSortCol = (typeof ALLOWED_SORT_COLS)[number];
 import { Transaction } from '../database/entities/transaction.entity';
 import { AuditAction } from '../database/entities/enums';
 import { QueryTransactionsDto } from './dto/query-transactions.dto';
@@ -19,18 +22,14 @@ export class TransactionsService {
     tenantId: string,
     filters: QueryTransactionsDto,
   ): Promise<{ data: Transaction[]; total: number }> {
-    const where: FindOptionsWhere<Transaction> = { tenantId };
-
-    if (filters.paymentHeadId) where.paymentHeadId = filters.paymentHeadId;
-    if (filters.vendorName) where.vendorName = Like(`%${filters.vendorName}%`);
-    if (filters.dateFrom && filters.dateTo) {
-      where.transactionDate = Between(new Date(filters.dateFrom), new Date(filters.dateTo));
-    }
-
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 20;
-    const sortBy = (filters.sortBy ?? 'transactionDate') as keyof Transaction;
-    const sortOrder = filters.sortOrder ?? 'DESC';
+    const rawSortBy = filters.sortBy ?? 'transactionDate';
+    if (filters.sortBy && !ALLOWED_SORT_COLS.includes(filters.sortBy as AllowedSortCol)) {
+      throw new BadRequestException(`Invalid sortBy value: ${filters.sortBy}`);
+    }
+    const sortBy = rawSortBy as AllowedSortCol;
+    const sortOrder: 'ASC' | 'DESC' = filters.sortOrder === 'ASC' ? 'ASC' : 'DESC';
 
     let query = this.txRepo
       .createQueryBuilder('tx')
@@ -91,12 +90,21 @@ export class TransactionsService {
 
   async exportCsv(tenantId: string, filters: QueryTransactionsDto): Promise<string> {
     const { data } = await this.findAll(tenantId, { ...filters, limit: 10000, page: 1 });
+    const csv = (v: unknown): string => '"' + String(v ?? '').replace(/"/g, '""') + '"';
     const header =
       'id,vendor_name,amount,currency,transaction_date,payment_head_id,payment_sub_head_id,status\n';
     const rows = data
-      .map(
-        (t) =>
-          `${t.id},${t.vendorName},${t.amount},${t.currency},${t.transactionDate.toISOString()},${t.paymentHeadId},${t.paymentSubHeadId},${t.status}`,
+      .map((t) =>
+        [
+          csv(t.id),
+          csv(t.vendorName),
+          csv(t.amount),
+          csv(t.currency),
+          csv(t.transactionDate.toISOString()),
+          csv(t.paymentHeadId),
+          csv(t.paymentSubHeadId),
+          csv(t.status),
+        ].join(','),
       )
       .join('\n');
     return header + rows;

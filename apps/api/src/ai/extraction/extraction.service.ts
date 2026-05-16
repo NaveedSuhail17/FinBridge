@@ -75,7 +75,12 @@ export class ExtractionService {
         upload.filePath,
         DOCUMENT_CLASSIFICATION_PROMPT,
       );
-      const classificationJson = JSON.parse(classificationRaw);
+      const classificationJson = JSON.parse(
+        classificationRaw
+          .replace(/^```(?:json)?\s*/i, '')
+          .replace(/\s*```$/i, '')
+          .trim(),
+      );
       const classification = ClassificationSchema.parse(classificationJson);
 
       // Update Upload.fileType from classifier result (classifier wins over user hint)
@@ -98,7 +103,12 @@ export class ExtractionService {
         );
         let parsed: InvoiceExtraction;
         try {
-          const json = JSON.parse(rawResponse);
+          const json = JSON.parse(
+            rawResponse
+              .replace(/^```(?:json)?\s*/i, '')
+              .replace(/\s*```$/i, '')
+              .trim(),
+          );
           parsed = InvoiceExtractionSchema.parse(json);
         } catch {
           throw new Error(`Failed to parse invoice extraction: ${rawResponse.slice(0, 200)}`);
@@ -135,6 +145,16 @@ export class ExtractionService {
 
         await this.createReview(tenantId, result.id, confidenceScore);
       } else {
+        // Guard: reject unsupported/unknown doc types before routing
+        const UNSUPPORTED_TYPES = ['UNKNOWN', 'LEDGER', 'MIS_REPORT'];
+        if (UNSUPPORTED_TYPES.includes(classification.document_type)) {
+          await this.jobRepo.update(jobId, {
+            status: ExtractionStatus.FAILED,
+            errorMessage: `Unsupported document type: ${classification.document_type}`,
+          });
+          return;
+        }
+
         // Non-invoice path via DocumentTypeRouter
         const routeResult = await this.documentTypeRouter.route(classification, upload.filePath);
         rawResponse = routeResult.result.rawResponse;
@@ -237,7 +257,7 @@ export class ExtractionService {
       where: { id: jobId, tenantId },
       relations: ['extractionResult'],
     });
-    if (!job) throw new Error('Extraction job not found');
+    if (!job) throw new NotFoundException('Extraction job not found');
     return job as ExtractionJob & { result?: ExtractionResult };
   }
 

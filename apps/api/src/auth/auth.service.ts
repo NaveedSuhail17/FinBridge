@@ -99,7 +99,7 @@ export class AuthService {
       tenant = platform;
     }
 
-    const roleName = dto.roleName ?? 'COMPANY_USER';
+    const roleName = 'COMPANY_USER';
     const foundRole = await this.roleRepo.findOneBy({ name: roleName });
     if (!foundRole) throw new NotFoundException(`Role ${roleName} not found`);
     role = foundRole;
@@ -145,7 +145,11 @@ export class AuthService {
     return this.buildTokens(user, tenant, role);
   }
 
-  async logout(refreshToken: string): Promise<void> {
+  async logout(refreshToken: string, callerId: string): Promise<void> {
+    const storedUserId = await this.redis.get(`refresh:${refreshToken}`);
+    if (storedUserId && storedUserId !== callerId) {
+      return; // token doesn't belong to caller — silently ignore
+    }
     await this.redis.del(`refresh:${refreshToken}`);
   }
 

@@ -13,6 +13,7 @@ import { TransactionStatus } from './enums';
 import { Tenant } from './tenant.entity';
 import { Upload } from './upload.entity';
 import { ExtractionResult } from './extraction-result.entity';
+import { decimalTransformer } from '../transformers/decimal.transformer';
 
 @Entity('salary_register_records')
 @Index(['tenantId', 'status'])
@@ -45,13 +46,34 @@ export class SalaryRegisterRecord {
   @Column({ name: 'employee_count', nullable: true, type: 'int' })
   employeeCount: number | null;
 
-  @Column({ name: 'total_gross', nullable: true, type: 'decimal', precision: 14, scale: 2 })
+  @Column({
+    name: 'total_gross',
+    nullable: true,
+    type: 'decimal',
+    precision: 14,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   totalGross: number | null;
 
-  @Column({ name: 'total_deductions', nullable: true, type: 'decimal', precision: 14, scale: 2 })
+  @Column({
+    name: 'total_deductions',
+    nullable: true,
+    type: 'decimal',
+    precision: 14,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   totalDeductions: number | null;
 
-  @Column({ name: 'total_net', nullable: true, type: 'decimal', precision: 14, scale: 2 })
+  @Column({
+    name: 'total_net',
+    nullable: true,
+    type: 'decimal',
+    precision: 14,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   totalNet: number | null;
 
   @Column({ name: 'employee_rows', type: 'jsonb', default: '[]' })

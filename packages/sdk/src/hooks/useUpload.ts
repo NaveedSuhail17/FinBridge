@@ -11,6 +11,7 @@ export interface UploadState {
   status: UploadStatus;
   progress: number;
   upload: Upload | null;
+  extractionJobId: string | null;
   error: string | null;
 }
 
@@ -19,25 +20,44 @@ export function useUpload() {
     status: 'idle',
     progress: 0,
     upload: null,
+    extractionJobId: null,
     error: null,
   });
 
   const uploadFile = useCallback(async (file: File, documentType?: string) => {
-    setState({ status: 'uploading', progress: 0, upload: null, error: null });
+    setState({
+      status: 'uploading',
+      progress: 0,
+      upload: null,
+      extractionJobId: null,
+      error: null,
+    });
 
     try {
-      const upload = await uploadsService.upload(
+      const result = await uploadsService.upload(
         file,
         (event: UploadProgressEvent) => {
           setState((prev) => ({ ...prev, progress: event.percent }));
         },
         documentType,
       );
-      setState({ status: 'processing', progress: 100, upload, error: null });
-      return upload;
+      setState({
+        status: 'processing',
+        progress: 100,
+        upload: result.upload,
+        extractionJobId: result.extractionJobId,
+        error: null,
+      });
+      return result;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Upload failed';
-      setState({ status: 'error', progress: 0, upload: null, error: message });
+      setState({
+        status: 'error',
+        progress: 0,
+        upload: null,
+        extractionJobId: null,
+        error: message,
+      });
       throw err;
     }
   }, []);

@@ -2,18 +2,23 @@ import { apiClient } from '../api-client';
 import type { Upload } from '@finbridge/types';
 import type { UploadProgressEvent } from '../types';
 
+export interface UploadResult {
+  upload: Upload;
+  extractionJobId: string;
+}
+
 export const uploadsService = {
   async upload(
     file: File,
     onProgress?: (event: UploadProgressEvent) => void,
     documentType?: string,
-  ): Promise<Upload> {
+  ): Promise<UploadResult> {
     const formData = new FormData();
     formData.append('file', file);
 
     const params = documentType ? { document_type: documentType } : undefined;
 
-    const { data } = await apiClient.post<Upload>('/uploads', formData, {
+    const { data } = await apiClient.post<UploadResult>('/uploads', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       params,
       onUploadProgress: (e) => {

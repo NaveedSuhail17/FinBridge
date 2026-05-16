@@ -14,6 +14,7 @@ import { Tenant } from './tenant.entity';
 import { Invoice } from './invoice.entity';
 import { PaymentHead } from './payment-head.entity';
 import { PaymentSubHead } from './payment-sub-head.entity';
+import { decimalTransformer } from '../transformers/decimal.transformer';
 
 @Entity('transactions')
 @Index(['tenantId', 'transactionDate'])
@@ -32,7 +33,7 @@ export class Transaction {
   @Column({ name: 'vendor_name' })
   vendorName: string;
 
-  @Column({ type: 'decimal', precision: 12, scale: 2 })
+  @Column({ type: 'decimal', precision: 12, scale: 2, transformer: decimalTransformer })
   amount: number;
 
   @Column({ default: 'INR' })

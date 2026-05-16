@@ -1,4 +1,5 @@
 import { IsEmail, IsString, MinLength, Matches, IsOptional, IsUUID } from 'class-validator';
+// roleName intentionally removed — self-registration always assigns COMPANY_USER role
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterDto {
@@ -24,9 +25,4 @@ export class RegisterDto {
   @IsOptional()
   @IsUUID()
   tenantId?: string;
-
-  @ApiPropertyOptional({ description: 'Role name for the tenant membership' })
-  @IsOptional()
-  @IsString()
-  roleName?: string;
 }

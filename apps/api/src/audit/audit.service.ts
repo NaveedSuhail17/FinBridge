@@ -13,17 +13,21 @@ export class AuditLogService {
   ) {}
 
   async log(event: LogAuditEventDto): Promise<void> {
-    await this.auditRepo.save(
-      this.auditRepo.create({
-        tenantId: event.tenantId,
-        userId: event.userId,
-        entityType: event.entityType,
-        entityId: event.entityId,
-        action: event.action,
-        changes: event.changes ?? null,
-        ipAddress: event.ipAddress ?? null,
-      }),
-    );
+    try {
+      await this.auditRepo.save(
+        this.auditRepo.create({
+          tenantId: event.tenantId,
+          userId: event.userId,
+          entityType: event.entityType,
+          entityId: event.entityId,
+          action: event.action,
+          changes: event.changes ?? null,
+          ipAddress: event.ipAddress ?? null,
+        }),
+      );
+    } catch {
+      // Audit log failures must not break the calling flow
+    }
   }
 
   async query(
@@ -56,11 +60,20 @@ export class AuditLogService {
   async exportCsv(tenantId: string | null, filters: QueryAuditLogsDto): Promise<string> {
     const { data } = await this.query(tenantId, { ...filters, limit: 10000, page: 1 });
 
+    const csv = (v: unknown) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
     const header = 'id,tenant_id,user_id,entity_type,entity_id,action,ip_address,created_at\n';
     const rows = data
-      .map(
-        (r) =>
-          `${r.id},${r.tenantId},${r.userId},${r.entityType},${r.entityId},${r.action},${r.ipAddress ?? ''},${r.createdAt.toISOString()}`,
+      .map((r) =>
+        [
+          csv(r.id),
+          csv(r.tenantId),
+          csv(r.userId),
+          csv(r.entityType),
+          csv(r.entityId),
+          csv(r.action),
+          csv(r.ipAddress),
+          csv(r.createdAt.toISOString()),
+        ].join(','),
       )
       .join('\n');
 

@@ -19,6 +19,11 @@ export const useAuthStore = create<AuthStore>()(
       setAuth: ({ token, refreshToken, user }) => set({ token, refreshToken, user }),
       clearAuth: () => set({ token: null, refreshToken: null, user: null }),
     }),
-    { name: 'finbridge-auth' },
+    {
+      name: 'finbridge-auth',
+      // Only persist the refresh token and user profile — never the short-lived access token.
+      // The access token is re-acquired on load via the refresh flow.
+      partialize: (state) => ({ refreshToken: state.refreshToken, user: state.user }),
+    },
   ),
 );

@@ -35,17 +35,18 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
-// Unwrap { success, data } envelope; auto-refresh on 401
+// Unwrap { success, data[, meta] } envelope; auto-refresh on 401
 apiClient.interceptors.response.use(
   (response) => {
-    // Unwrap envelope if present so callers see the payload directly
     if (
       response.data != null &&
       typeof response.data === 'object' &&
       'success' in response.data &&
       'data' in response.data
     ) {
-      response.data = response.data.data;
+      const { data, meta } = response.data as { data: unknown; meta?: unknown };
+      // Preserve meta alongside data for paginated responses
+      response.data = meta != null ? { data, meta } : data;
     }
     return response;
   },

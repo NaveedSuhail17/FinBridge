@@ -39,6 +39,8 @@ services:
       context: .
       dockerfile: infrastructure/docker/Dockerfile.api-init
     container_name: finbridge-api-init
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/finbridge
       NODE_ENV: production
@@ -72,20 +74,29 @@ services:
         condition: service_completed_successfully
     volumes:
       - uploads_data:/app/uploads
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3001/api/v1/health || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
 
   web:
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile.web
+      args:
+        # NEXT_PUBLIC_* vars must be baked at build time — runtime env has no effect
+        NEXT_PUBLIC_API_URL: http://localhost:3001
     container_name: finbridge-web
     restart: unless-stopped
     ports:
       - '3000:3000'
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3001
       NODE_ENV: production
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
 volumes:
   postgres_data:

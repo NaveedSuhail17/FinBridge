@@ -24,9 +24,9 @@ until docker compose exec postgres pg_isready -U postgres > /dev/null 2>&1; do
   sleep 1
 done
 
-# 5. Run migrations
-echo "🗄️  Running database migrations..."
-pnpm db:migrate
+# 5. Sync schema (uses TypeORM schema:sync — no migration files needed for fresh setup)
+echo "🗄️  Syncing database schema..."
+pnpm db:schema:sync
 
 # 6. Seed database
 echo "🌱 Seeding database..."

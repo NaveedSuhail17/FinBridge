@@ -25,8 +25,9 @@ export class AccountingFirmsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get accounting firm by ID' })
-  async findOne(@Param('id') id: string) {
-    return { success: true, data: await this.firmsService.findOne(id) };
+  async findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    const actorTenantId = user.roleName === 'PLATFORM_ADMIN' ? null : user.tenantId;
+    return { success: true, data: await this.firmsService.findOne(id, actorTenantId) };
   }
 
   @Post()
@@ -39,7 +40,9 @@ export class AccountingFirmsController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update accounting firm' })
+  @UseGuards(RolesGuard)
+  @Roles('PLATFORM_ADMIN', 'ACCOUNTING_FIRM_ADMIN')
+  @ApiOperation({ summary: 'Update accounting firm (PLATFORM_ADMIN or ACCOUNTING_FIRM_ADMIN)' })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateAccountingFirmDto,

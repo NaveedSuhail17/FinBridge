@@ -13,6 +13,7 @@ import { TransactionStatus } from './enums';
 import { Tenant } from './tenant.entity';
 import { Upload } from './upload.entity';
 import { ExtractionResult } from './extraction-result.entity';
+import { decimalTransformer } from '../transformers/decimal.transformer';
 
 @Entity('bank_statement_records')
 @Index(['tenantId', 'status'])
@@ -48,10 +49,24 @@ export class BankStatementRecord {
   @Column({ name: 'period_end', nullable: true, type: 'date' })
   periodEnd: Date | null;
 
-  @Column({ name: 'opening_balance', nullable: true, type: 'decimal', precision: 14, scale: 2 })
+  @Column({
+    name: 'opening_balance',
+    nullable: true,
+    type: 'decimal',
+    precision: 14,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   openingBalance: number | null;
 
-  @Column({ name: 'closing_balance', nullable: true, type: 'decimal', precision: 14, scale: 2 })
+  @Column({
+    name: 'closing_balance',
+    nullable: true,
+    type: 'decimal',
+    precision: 14,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   closingBalance: number | null;
 
   @Column({ name: 'transaction_rows', type: 'jsonb', default: '[]' })

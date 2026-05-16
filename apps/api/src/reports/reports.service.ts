@@ -187,7 +187,8 @@ export class ReportsService {
       case ReportType.CASH_FLOW: {
         const byMonth: Record<string, number> = {};
         for (const t of transactions) {
-          const key = `${t.transactionDate.getFullYear()}-${String(t.transactionDate.getMonth() + 1).padStart(2, '0')}`;
+          const d = new Date(t.transactionDate);
+          const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
           byMonth[key] = (byMonth[key] ?? 0) + Number(t.amount);
         }
         data = {
@@ -229,7 +230,7 @@ export class ReportsService {
 
     const totals = new Array<number>(12).fill(0);
     for (const t of transactions) {
-      const m = new Date(t.transactionDate).getMonth();
+      const m = new Date(t.transactionDate).getUTCMonth();
       totals[m] += Number(t.amount);
     }
 

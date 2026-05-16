@@ -25,6 +25,7 @@ export type {
 } from './services/companies.service';
 
 export { uploadsService } from './services/uploads.service';
+export type { UploadResult } from './services/uploads.service';
 
 export { reviewsService } from './services/reviews.service';
 export type {

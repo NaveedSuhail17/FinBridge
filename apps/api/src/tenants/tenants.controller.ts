@@ -25,8 +25,9 @@ export class TenantsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a tenant by ID' })
-  async findOne(@Param('id') id: string) {
-    return { success: true, data: await this.tenantsService.findOne(id) };
+  async findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    const actorTenantId = user.roleName === 'PLATFORM_ADMIN' ? null : user.tenantId;
+    return { success: true, data: await this.tenantsService.findOne(id, actorTenantId) };
   }
 
   @Post()
@@ -39,7 +40,9 @@ export class TenantsController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a tenant' })
+  @UseGuards(RolesGuard)
+  @Roles('PLATFORM_ADMIN')
+  @ApiOperation({ summary: 'Update a tenant (PLATFORM_ADMIN only)' })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateTenantDto,

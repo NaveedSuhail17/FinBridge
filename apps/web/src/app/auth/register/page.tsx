@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@finbridge/sdk';
@@ -46,8 +46,12 @@ function PasswordStrength({ password }: { password: string }) {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register: registerUser } = useAuth();
+  const { register: registerUser, isAuthenticated } = useAuth();
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isAuthenticated) router.replace('/dashboard');
+  }, [isAuthenticated, router]);
 
   const {
     register,

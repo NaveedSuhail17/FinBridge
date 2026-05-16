@@ -28,8 +28,11 @@ export interface TransactionListResponse {
 
 export const transactionsService = {
   async list(filters: TransactionFilters = {}): Promise<TransactionListResponse> {
-    const response = await apiClient.get<Transaction[]>('/transactions', { params: filters });
-    return response.data as unknown as TransactionListResponse;
+    const { data } = await apiClient.get<{ data: Transaction[]; meta: PaginatedMeta }>(
+      '/transactions',
+      { params: filters },
+    );
+    return data as TransactionListResponse;
   },
 
   async get(id: string): Promise<Transaction> {

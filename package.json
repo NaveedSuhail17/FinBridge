@@ -14,6 +14,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\" --ignore-path .prettierignore",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\" --ignore-path .prettierignore",
     "test": "turbo run test",
+    "test:coverage": "turbo run test:cov",
     "test:watch": "turbo run test:watch",
     "setup": "pnpm install && pnpm db:setup",
     "db:setup": "pnpm db:migrate && pnpm db:seed",

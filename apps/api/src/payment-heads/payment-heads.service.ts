@@ -102,7 +102,7 @@ export class PaymentHeadsService {
     if (txCount > 0)
       throw new BadRequestException('Cannot delete: transactions reference this payment head');
 
-    await this.headRepo.delete(id);
+    await this.headRepo.delete({ id, tenantId });
     await this.auditService.log({
       tenantId,
       userId: actorId,
@@ -114,13 +114,14 @@ export class PaymentHeadsService {
 
   async exportCsv(tenantId: string): Promise<string> {
     const heads = await this.findWithSubHeads(tenantId);
+    const csv = (v: unknown) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
     const rows: string[] = ['head_code,head_name,sub_head_code,sub_head_name'];
     for (const h of heads) {
       if (!h.subHeads?.length) {
-        rows.push(`${h.code},${h.name},,`);
+        rows.push([csv(h.code), csv(h.name), '""', '""'].join(','));
       } else {
         for (const sh of h.subHeads) {
-          rows.push(`${h.code},${h.name},${sh.code},${sh.name}`);
+          rows.push([csv(h.code), csv(h.name), csv(sh.code), csv(sh.name)].join(','));
         }
       }
     }

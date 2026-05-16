@@ -1,16 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const config = app.get(ConfigService);
 
   // Security
   app.use(helmet());
   app.enableCors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    origin: config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000',
     credentials: true,
   });
 
@@ -38,7 +40,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.PORT ?? 3001;
+  const port = config.get<number>('PORT') ?? 3001;
   await app.listen(port);
   console.log(`FinBridge API running on http://localhost:${port}`);
   console.log(`Swagger docs: http://localhost:${port}/api/docs`);

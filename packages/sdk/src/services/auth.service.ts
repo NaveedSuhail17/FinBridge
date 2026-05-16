@@ -39,8 +39,7 @@ export const authService = {
   },
 
   async acceptInvite(dto: AcceptInviteDto): Promise<AuthTokens> {
-    const { token, ...body } = dto;
-    const { data } = await apiClient.post<AuthTokens>(`/auth/accept-invite?token=${token}`, body);
+    const { data } = await apiClient.post<AuthTokens>('/auth/accept-invite', dto);
     return data;
   },
 };

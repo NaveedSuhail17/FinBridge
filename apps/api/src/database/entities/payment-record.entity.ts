@@ -13,6 +13,7 @@ import { TransactionStatus } from './enums';
 import { Tenant } from './tenant.entity';
 import { Upload } from './upload.entity';
 import { ExtractionResult } from './extraction-result.entity';
+import { decimalTransformer } from '../transformers/decimal.transformer';
 
 @Entity('payment_records')
 @Index(['tenantId', 'status'])
@@ -36,7 +37,13 @@ export class PaymentRecord {
   @Column({ nullable: true, type: 'varchar' })
   payee: string | null;
 
-  @Column({ nullable: true, type: 'decimal', precision: 12, scale: 2 })
+  @Column({
+    nullable: true,
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   amount: number | null;
 
   @Column({ nullable: true, default: 'INR', type: 'varchar' })

@@ -6,7 +6,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
+import { Repository, LessThan, IsNull, DataSource } from 'typeorm';
 import { Review } from '../database/entities/review.entity';
 import { ReviewHistory } from '../database/entities/review-history.entity';
 import { ExtractionResult } from '../database/entities/extraction-result.entity';
@@ -60,6 +60,7 @@ export class ReviewsService {
     private readonly notificationRepo: Repository<Notification>,
     private readonly auditService: AuditLogService,
     private readonly notificationsService: NotificationsService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findPending(
@@ -127,14 +128,45 @@ export class ReviewsService {
       }
     }
 
-    // Mark review approved regardless of doc type
-    await this.reviewRepo.update(id, {
-      status: ReviewStatus.APPROVED,
-      reviewedBy: userId,
-      completedAt: new Date(),
+    // Wrap all state mutations in a DB transaction so partial failures can't leave corrupt state
+    const txResult = await this.dataSource.transaction(async (em) => {
+      await em.update(Review, id, {
+        status: ReviewStatus.APPROVED,
+        reviewedBy: userId,
+        completedAt: new Date(),
+      });
+
+      if (documentType === FileType.INVOICE) {
+        return this.approveInvoice(id, tenantId, result, dto, em);
+      }
+      if (documentType === FileType.PAYMENT) {
+        await em.update(
+          PaymentRecord,
+          { extractionResultId: result.id, tenantId },
+          { status: TransactionStatus.APPROVED },
+        );
+        return { documentType: FileType.PAYMENT, approved: true };
+      }
+      if (documentType === FileType.SALARY_REGISTER) {
+        await em.update(
+          SalaryRegisterRecord,
+          { extractionResultId: result.id, tenantId },
+          { status: TransactionStatus.APPROVED },
+        );
+        return { documentType: FileType.SALARY_REGISTER, approved: true };
+      }
+      if (documentType === FileType.BANK_STATEMENT) {
+        await em.update(
+          BankStatementRecord,
+          { extractionResultId: result.id, tenantId },
+          { status: TransactionStatus.APPROVED },
+        );
+        return { documentType: FileType.BANK_STATEMENT, approved: true };
+      }
+      return { documentType, approved: true };
     });
 
-    await this.auditService.log({
+    void this.auditService.log({
       tenantId,
       userId,
       entityType: 'Review',
@@ -158,35 +190,7 @@ export class ReviewsService {
         );
     }
 
-    if (documentType === FileType.INVOICE) {
-      return this.approveInvoice(id, tenantId, result, dto);
-    }
-
-    if (documentType === FileType.PAYMENT) {
-      await this.paymentRecordRepo.update(
-        { extractionResultId: result.id },
-        { status: TransactionStatus.APPROVED },
-      );
-      return { documentType: FileType.PAYMENT, approved: true };
-    }
-
-    if (documentType === FileType.SALARY_REGISTER) {
-      await this.salaryRegisterRepo.update(
-        { extractionResultId: result.id },
-        { status: TransactionStatus.APPROVED },
-      );
-      return { documentType: FileType.SALARY_REGISTER, approved: true };
-    }
-
-    if (documentType === FileType.BANK_STATEMENT) {
-      await this.bankStatementRepo.update(
-        { extractionResultId: result.id },
-        { status: TransactionStatus.APPROVED },
-      );
-      return { documentType: FileType.BANK_STATEMENT, approved: true };
-    }
-
-    return { documentType, approved: true };
+    return txResult;
   }
 
   private async approveInvoice(
@@ -194,6 +198,7 @@ export class ReviewsService {
     tenantId: string,
     result: ExtractionResult,
     dto: ApproveReviewDto,
+    em?: import('typeorm').EntityManager,
   ): Promise<Transaction> {
     const parsed = result.parsedResponse as {
       vendor_name: string | null;
@@ -202,14 +207,22 @@ export class ReviewsService {
       currency: string | null;
     };
 
-    const invoice = await this.invoiceRepo.findOneBy({
+    const invoiceRepo = em ? em.getRepository(Invoice) : this.invoiceRepo;
+    const txRepo = em ? em.getRepository(Transaction) : this.txRepo;
+
+    const invoice = await invoiceRepo.findOneBy({
       uploadId: result.extractionJob?.uploadId,
+      tenantId,
     });
 
-    const tx = await this.txRepo.save(
-      this.txRepo.create({
+    if (!invoice) {
+      throw new NotFoundException('Invoice record not found for this upload');
+    }
+
+    const tx = await txRepo.save(
+      txRepo.create({
         tenantId,
-        invoiceId: invoice?.id ?? reviewId,
+        invoiceId: invoice.id,
         vendorName: parsed.vendor_name,
         amount: parsed.total_amount,
         currency: parsed.currency ?? 'INR',
@@ -221,9 +234,7 @@ export class ReviewsService {
       }),
     );
 
-    if (invoice) {
-      await this.invoiceRepo.update(invoice.id, { status: TransactionStatus.APPROVED });
-    }
+    await invoiceRepo.update(invoice.id, { status: TransactionStatus.APPROVED });
 
     return tx;
   }
@@ -342,7 +353,7 @@ export class ReviewsService {
     const stale = await this.reviewRepo.find({
       where: {
         status: ReviewStatus.PENDING,
-        escalatedAt: undefined,
+        escalatedAt: IsNull(),
         createdAt: LessThan(cutoff),
       },
     });

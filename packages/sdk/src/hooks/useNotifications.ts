@@ -22,7 +22,7 @@ export function useNotifications(): UseNotificationsResult {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const token = useAuthStore((s) => s.token);
-  const prevUnreadRef = useRef(0);
+  const prevUnreadRef = useRef<number | null>(null);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -50,7 +50,7 @@ export function useNotifications(): UseNotificationsResult {
 
     let es: EventSource | null = null;
     try {
-      es = new EventSource(`${BASE_URL}/notifications/stream`, {});
+      es = new EventSource(`${BASE_URL}/notifications/stream?token=${encodeURIComponent(token)}`);
 
       es.onmessage = (event: MessageEvent) => {
         try {
@@ -75,8 +75,9 @@ export function useNotifications(): UseNotificationsResult {
 
   // Toast trigger: emit a browser custom event when unreadCount increases so
   // NotificationBell can subscribe without prop-drilling.
+  // prevUnreadRef starts as null; first fetchAll sets the baseline without toasting.
   useEffect(() => {
-    if (unreadCount > prevUnreadRef.current && prevUnreadRef.current !== 0) {
+    if (prevUnreadRef.current !== null && unreadCount > prevUnreadRef.current) {
       window.dispatchEvent(new CustomEvent('finbridge:new-notification'));
     }
     prevUnreadRef.current = unreadCount;

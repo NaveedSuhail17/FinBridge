@@ -95,7 +95,7 @@ export class PaymentSubHeadsService {
     if (txCount > 0)
       throw new BadRequestException('Cannot delete: transactions reference this sub-head');
 
-    await this.subHeadRepo.delete(id);
+    await this.subHeadRepo.delete({ id, tenantId });
     await this.auditService.log({
       tenantId,
       userId: actorId,

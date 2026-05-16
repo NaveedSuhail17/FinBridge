@@ -4,7 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const CLAUDE_MODEL = 'claude-opus-4-7';
+const CLAUDE_MODEL = 'claude-sonnet-4-5';
 const MAX_RETRIES = 3;
 const TIMEOUT_MS = 60000;
 
@@ -57,6 +57,10 @@ export class ClaudeVisionService {
         if (content.type !== 'text') throw new Error('Unexpected response type from Claude');
         return content.text;
       } catch (err) {
+        // Do not retry non-transient 4xx errors (bad key, invalid request, etc.)
+        if (err instanceof Anthropic.APIError && err.status >= 400 && err.status < 500) {
+          throw err;
+        }
         lastError = err as Error;
         this.logger.warn(
           `Claude API attempt ${attempt}/${MAX_RETRIES} failed: ${lastError.message}`,

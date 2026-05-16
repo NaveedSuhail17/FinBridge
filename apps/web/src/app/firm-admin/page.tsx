@@ -191,7 +191,7 @@ export default function FirmAdminPage() {
   const [tab, setTab] = useState<Tab>('payment-heads');
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute allowedRoles={['ACCOUNTING_FIRM_ADMIN']}>
       <AppShell>
         <div className="space-y-6">
           <div>

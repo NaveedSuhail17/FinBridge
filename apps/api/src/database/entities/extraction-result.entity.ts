@@ -10,6 +10,7 @@ import {
 import { ExtractionJob } from './extraction-job.entity';
 import { Review } from './review.entity';
 import { ExtractionRevision } from './extraction-revision.entity';
+import { decimalTransformer } from '../transformers/decimal.transformer';
 
 @Entity('extraction_results')
 export class ExtractionResult {
@@ -25,7 +26,13 @@ export class ExtractionResult {
   @Column({ name: 'parsed_response', type: 'jsonb' })
   parsedResponse: Record<string, unknown>;
 
-  @Column({ name: 'confidence_score', type: 'decimal', precision: 5, scale: 2 })
+  @Column({
+    name: 'confidence_score',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   confidenceScore: number;
 
   @Column({ name: 'validation_errors', type: 'text', array: true, default: [] })

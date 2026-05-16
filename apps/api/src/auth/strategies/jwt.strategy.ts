@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import type { Request } from 'express';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { PlatformUser } from '../../database/entities/platform-user.entity';
 
@@ -15,7 +16,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly userRepo: Repository<PlatformUser>,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      // Also extract from ?token= query param so SSE (which can't send headers) works
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (req: Request) => (req.query?.token as string | undefined) ?? null,
+      ]),
       ignoreExpiration: false,
       secretOrKey: config.getOrThrow<string>('JWT_SECRET'),
     });

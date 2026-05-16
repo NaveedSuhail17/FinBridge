@@ -81,16 +81,19 @@ function AuditLogsTab() {
         <div className="space-y-1">
           <Label className="text-xs">Action</Label>
           <Select
-            value={filters.action ?? ''}
+            value={filters.action ?? '__ALL__'}
             onValueChange={(v) =>
-              setFilters((f) => ({ ...f, action: (v as AuditAction) || undefined }))
+              setFilters((f) => ({
+                ...f,
+                action: v === '__ALL__' ? undefined : (v as AuditAction),
+              }))
             }
           >
             <SelectTrigger className="w-36 h-8 text-sm">
               <SelectValue placeholder="All actions" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All actions</SelectItem>
+              <SelectItem value="__ALL__">All actions</SelectItem>
               {Object.values(AuditAction).map((a) => (
                 <SelectItem key={a} value={a}>
                   {a}
@@ -243,7 +246,7 @@ export default function AdminPage() {
   ];
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute allowedRoles={['PLATFORM_ADMIN']}>
       <AppShell>
         <div className="space-y-6">
           <div>
