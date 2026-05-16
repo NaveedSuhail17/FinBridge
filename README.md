@@ -132,14 +132,17 @@ pnpm install
 cp .env.example .env
 # Edit .env — set ANTHROPIC_API_KEY to your real key
 
-# 4. Start PostgreSQL + Redis
+# 4. Build shared workspace packages (required before first dev run)
+pnpm --filter @finbridge/prompts build
+
+# 5. Start PostgreSQL + Redis
 docker compose up -d postgres redis
 
-# 5. Sync database schema and seed demo data
+# 6. Sync database schema and seed demo data
 pnpm db:schema:sync
 pnpm db:seed
 
-# 6. Start all apps (frontend + backend, with hot-reload)
+# 7. Start all apps (frontend + backend, with hot-reload)
 pnpm dev
 ```
 
