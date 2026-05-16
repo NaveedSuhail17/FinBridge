@@ -32,9 +32,8 @@ export function useTransactionList(filters: TransactionFilters = {}) {
     void fetch();
   }, [fetch]);
 
-  const exportCsv = useCallback(() => {
-    const url = transactionsService.exportCsvUrl(filters);
-    window.open(url, '_blank');
+  const exportCsv = useCallback(async () => {
+    await transactionsService.exportCsv(filters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtersKey]);
 
