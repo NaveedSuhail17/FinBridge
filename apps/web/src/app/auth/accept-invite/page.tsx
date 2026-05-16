@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authService, useAuthStore } from '@finbridge/sdk';
 import { AuthLayout, Button, Input, Label } from '@finbridge/ui';
@@ -22,11 +22,11 @@ function AcceptInviteForm() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormData>();
 
-  const password = watch('password', '');
+  const password = useWatch({ control, name: 'password', defaultValue: '' });
 
   const onSubmit = async (data: FormData) => {
     try {
