@@ -31,7 +31,7 @@ import {
   Users,
   ClipboardCheck,
   TrendingUp,
-  Upload,
+  Upload as UploadIcon,
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
@@ -157,7 +157,7 @@ function UploadFunnelCards() {
       <DashboardCard
         title="Uploaded"
         value={v(data?.uploaded)}
-        icon={<Upload className="h-4 w-4" />}
+        icon={<UploadIcon className="h-4 w-4" />}
       />
       <DashboardCard
         title="Extracted"
@@ -383,7 +383,7 @@ function CompanyUserDashboard() {
         </div>
         <Link href="/uploads">
           <Button size="sm">
-            <Upload className="h-4 w-4 mr-1.5" />
+            <UploadIcon className="h-4 w-4 mr-1.5" />
             New Upload
           </Button>
         </Link>
@@ -393,7 +393,7 @@ function CompanyUserDashboard() {
         <DashboardCard
           title="Total Uploaded"
           value={v(funnel?.uploaded)}
-          icon={<Upload className="h-4 w-4" />}
+          icon={<UploadIcon className="h-4 w-4" />}
         />
         <DashboardCard
           title="Processing"
