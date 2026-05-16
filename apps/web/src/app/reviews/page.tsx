@@ -68,7 +68,7 @@ export default function ReviewsPage() {
   }, [reviews]);
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute allowedRoles={['ACCOUNTING_FIRM_ADMIN', 'ACCOUNTANT']}>
       <AppShell>
         <div className="space-y-6">
           <div>

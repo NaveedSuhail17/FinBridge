@@ -1,11 +1,15 @@
 import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/authorization/roles.guard';
+import { Roles } from '../common/authorization/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { ReviewsService } from './reviews.service';
 import { ApproveReviewDto } from './dto/approve-review.dto';
 import { RejectReviewDto } from './dto/reject-review.dto';
 import { EditReviewDto } from './dto/edit-review.dto';
+
+const REVIEWER_ROLES = ['ACCOUNTING_FIRM_ADMIN', 'ACCOUNTANT'];
 
 @ApiTags('Reviews')
 @ApiBearerAuth()
@@ -42,6 +46,8 @@ export class ReviewsController {
   }
 
   @Post(':id/approve')
+  @UseGuards(RolesGuard)
+  @Roles(...REVIEWER_ROLES)
   @ApiOperation({ summary: 'Approve a review — creates Transaction and AuditLog' })
   async approve(
     @Param('id') id: string,
@@ -53,6 +59,8 @@ export class ReviewsController {
   }
 
   @Post(':id/reject')
+  @UseGuards(RolesGuard)
+  @Roles(...REVIEWER_ROLES)
   @ApiOperation({ summary: 'Reject a review with reason' })
   async reject(
     @Param('id') id: string,
@@ -64,6 +72,8 @@ export class ReviewsController {
   }
 
   @Patch(':id/edit')
+  @UseGuards(RolesGuard)
+  @Roles(...REVIEWER_ROLES)
   @ApiOperation({ summary: 'Edit extracted fields — stores ReviewHistory per changed field' })
   async edit(
     @Param('id') id: string,

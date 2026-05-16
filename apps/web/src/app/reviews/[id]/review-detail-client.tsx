@@ -308,7 +308,7 @@ export function ReviewDetailClient({ id }: { id: string }) {
   const subHeads = paymentHeads.find((h) => h.id === selectedHead)?.subHeads ?? [];
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute allowedRoles={['ACCOUNTING_FIRM_ADMIN', 'ACCOUNTANT']}>
       <AppShell>
         <div className="flex flex-col h-full gap-4">
           <div className="flex items-center justify-between shrink-0">
