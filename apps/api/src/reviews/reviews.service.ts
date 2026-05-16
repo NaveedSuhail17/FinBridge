@@ -6,7 +6,8 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, IsNull, DataSource, DeepPartial } from 'typeorm';
+import { Repository, LessThan, IsNull, In, DataSource, DeepPartial } from 'typeorm';
+import { Tenant } from '../database/entities/tenant.entity';
 import { Review } from '../database/entities/review.entity';
 import { ReviewHistory } from '../database/entities/review-history.entity';
 import { ExtractionResult } from '../database/entities/extraction-result.entity';
@@ -58,18 +59,26 @@ export class ReviewsService {
     private readonly txRepo: Repository<Transaction>,
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
+    @InjectRepository(Tenant)
+    private readonly tenantRepo: Repository<Tenant>,
     private readonly auditService: AuditLogService,
     private readonly notificationsService: NotificationsService,
     private readonly dataSource: DataSource,
   ) {}
+
+  private async resolveTenantIds(tenantId: string): Promise<string[]> {
+    const children = await this.tenantRepo.findBy({ parentTenantId: tenantId });
+    return [tenantId, ...children.map((c) => c.id)];
+  }
 
   async findPending(
     tenantId: string,
     page = 1,
     limit = 20,
   ): Promise<{ data: Review[]; total: number }> {
+    const tenantIds = await this.resolveTenantIds(tenantId);
     const [data, total] = await this.reviewRepo.findAndCount({
-      where: { tenantId, status: ReviewStatus.PENDING },
+      where: { tenantId: In(tenantIds), status: ReviewStatus.PENDING },
       relations: ['extractionResult'],
       order: { createdAt: 'ASC' },
       skip: (page - 1) * limit,

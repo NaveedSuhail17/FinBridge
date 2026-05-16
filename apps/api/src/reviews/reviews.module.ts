@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Tenant } from '../database/entities/tenant.entity';
 import { Review } from '../database/entities/review.entity';
 import { ReviewHistory } from '../database/entities/review-history.entity';
 import { ExtractionResult } from '../database/entities/extraction-result.entity';
@@ -19,6 +20,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
+      Tenant,
       Review,
       ReviewHistory,
       ExtractionResult,

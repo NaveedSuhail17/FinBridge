@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Tenant } from '../database/entities/tenant.entity';
 
 const ALLOWED_SORT_COLS = ['transactionDate', 'amount', 'vendorName', 'createdAt'] as const;
 type AllowedSortCol = (typeof ALLOWED_SORT_COLS)[number];
@@ -15,8 +16,15 @@ export class TransactionsService {
   constructor(
     @InjectRepository(Transaction)
     private readonly txRepo: Repository<Transaction>,
+    @InjectRepository(Tenant)
+    private readonly tenantRepo: Repository<Tenant>,
     private readonly auditService: AuditLogService,
   ) {}
+
+  private async resolveTenantIds(tenantId: string): Promise<string[]> {
+    const children = await this.tenantRepo.findBy({ parentTenantId: tenantId });
+    return [tenantId, ...children.map((c) => c.id)];
+  }
 
   async findAll(
     tenantId: string,
@@ -31,9 +39,10 @@ export class TransactionsService {
     const sortBy = rawSortBy as AllowedSortCol;
     const sortOrder: 'ASC' | 'DESC' = filters.sortOrder === 'ASC' ? 'ASC' : 'DESC';
 
+    const tenantIds = await this.resolveTenantIds(tenantId);
     let query = this.txRepo
       .createQueryBuilder('tx')
-      .where('tx.tenant_id = :tenantId', { tenantId });
+      .where('tx.tenant_id IN (:...tenantIds)', { tenantIds });
 
     if (filters.paymentHeadId)
       query = query.andWhere('tx.payment_head_id = :pid', { pid: filters.paymentHeadId });
@@ -58,8 +67,9 @@ export class TransactionsService {
   }
 
   async findOne(id: string, tenantId: string): Promise<Transaction> {
+    const tenantIds = await this.resolveTenantIds(tenantId);
     const tx = await this.txRepo.findOne({
-      where: { id, tenantId },
+      where: tenantIds.map((tid) => ({ id, tenantId: tid })),
       relations: ['paymentHead', 'paymentSubHead', 'invoice'],
     });
     if (!tx) throw new NotFoundException('Transaction not found');
@@ -89,7 +99,7 @@ export class TransactionsService {
   }
 
   async exportCsv(tenantId: string, filters: QueryTransactionsDto): Promise<string> {
-    const { data } = await this.findAll(tenantId, { ...filters, limit: 10000, page: 1 });
+    const { data } = await this.findAll(tenantId, { ...filters, limit: 10_000, page: 1 });
     const csv = (v: unknown): string => '"' + String(v ?? '').replace(/"/g, '""') + '"';
     const header =
       'id,vendor_name,amount,currency,transaction_date,payment_head_id,payment_sub_head_id,status\n';
