@@ -6,7 +6,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, IsNull, DataSource } from 'typeorm';
+import { Repository, LessThan, IsNull, DataSource, DeepPartial } from 'typeorm';
 import { Review } from '../database/entities/review.entity';
 import { ReviewHistory } from '../database/entities/review-history.entity';
 import { ExtractionResult } from '../database/entities/extraction-result.entity';
@@ -219,20 +219,19 @@ export class ReviewsService {
       throw new NotFoundException('Invoice record not found for this upload');
     }
 
-    const tx = await txRepo.save(
-      txRepo.create({
-        tenantId,
-        invoiceId: invoice.id,
-        vendorName: parsed.vendor_name,
-        amount: parsed.total_amount,
-        currency: parsed.currency ?? 'INR',
-        transactionDate: parsed.invoice_date ? new Date(parsed.invoice_date) : new Date(),
-        paymentHeadId: dto.paymentHeadId,
-        paymentSubHeadId: dto.paymentSubHeadId,
-        status: TransactionStatus.APPROVED,
-        notes: dto.notes ?? null,
-      }),
-    );
+    const newTx = txRepo.create({
+      tenantId,
+      invoiceId: invoice.id,
+      vendorName: parsed.vendor_name,
+      amount: parsed.total_amount,
+      currency: parsed.currency ?? 'INR',
+      transactionDate: parsed.invoice_date ? new Date(parsed.invoice_date) : new Date(),
+      paymentHeadId: dto.paymentHeadId,
+      paymentSubHeadId: dto.paymentSubHeadId,
+      status: TransactionStatus.APPROVED,
+      notes: dto.notes ?? null,
+    } as DeepPartial<Transaction>);
+    const tx = await txRepo.save(newTx);
 
     await invoiceRepo.update(invoice.id, { status: TransactionStatus.APPROVED });
 

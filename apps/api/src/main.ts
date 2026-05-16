@@ -7,12 +7,12 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const config = app.get(ConfigService);
+  const configService = app.get(ConfigService);
 
   // Security
   app.use(helmet());
   app.enableCors({
-    origin: config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000',
+    origin: configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000',
     credentials: true,
   });
 
@@ -31,16 +31,16 @@ async function bootstrap() {
   );
 
   // Swagger
-  const config = new DocumentBuilder()
+  const swaggerConfig = new DocumentBuilder()
     .setTitle('FinBridge API')
     .setDescription('AI-powered multi-tenant financial data exchange platform')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = config.get<number>('PORT') ?? 3001;
+  const port = configService.get<number>('PORT') ?? 3001;
   await app.listen(port);
   console.log(`FinBridge API running on http://localhost:${port}`);
   console.log(`Swagger docs: http://localhost:${port}/api/docs`);
