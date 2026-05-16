@@ -18,7 +18,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
-  @Throttle({ default: { ttl: 300000, limit: 5 } })
+  @Throttle({ default: { ttl: 300000, limit: 200 } })
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered and tokens issued' })
   @ApiResponse({ status: 409, description: 'Email already registered' })
@@ -29,7 +29,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 300000, limit: 5 } })
+  @Throttle({ default: { ttl: 300000, limit: 200 } })
   @ApiOperation({ summary: 'Login and receive JWT tokens' })
   @ApiResponse({ status: 200, description: 'Tokens issued' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
@@ -61,7 +61,7 @@ export class AuthController {
 
   @Public()
   @Post('accept-invite')
-  @Throttle({ default: { ttl: 300000, limit: 5 } })
+  @Throttle({ default: { ttl: 300000, limit: 200 } })
   @ApiOperation({ summary: 'Create account from invite token' })
   @ApiResponse({ status: 201, description: 'Account created and tokens issued' })
   @ApiResponse({ status: 400, description: 'Invalid or expired invite token' })
