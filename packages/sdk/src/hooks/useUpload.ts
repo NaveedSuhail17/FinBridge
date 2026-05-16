@@ -63,7 +63,7 @@ export function useUpload() {
   }, []);
 
   const reset = useCallback(() => {
-    setState({ status: 'idle', progress: 0, upload: null, error: null });
+    setState({ status: 'idle', progress: 0, upload: null, extractionJobId: null, error: null });
   }, []);
 
   return { ...state, uploadFile, reset };
