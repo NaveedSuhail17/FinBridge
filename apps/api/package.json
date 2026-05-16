@@ -12,12 +12,12 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "db:migrate": "TS_NODE_PROJECT=tsconfig.typeorm.json typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
-    "db:migrate:generate": "TS_NODE_PROJECT=tsconfig.typeorm.json typeorm-ts-node-commonjs migration:generate -d src/database/data-source.ts src/database/migrations/Init",
-    "db:migrate:revert": "TS_NODE_PROJECT=tsconfig.typeorm.json typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts",
-    "db:seed": "TS_NODE_PROJECT=tsconfig.typeorm.json ts-node src/database/seed.ts",
-    "db:reset": "TS_NODE_PROJECT=tsconfig.typeorm.json typeorm-ts-node-commonjs schema:drop -d src/database/data-source.ts && TS_NODE_PROJECT=tsconfig.typeorm.json typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
-    "db:schema:sync": "TS_NODE_PROJECT=tsconfig.typeorm.json typeorm-ts-node-commonjs schema:sync -d src/database/data-source.ts"
+    "db:migrate": "cross-env TS_NODE_PROJECT=tsconfig.typeorm.json typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
+    "db:migrate:generate": "cross-env TS_NODE_PROJECT=tsconfig.typeorm.json typeorm-ts-node-commonjs migration:generate -d src/database/data-source.ts src/database/migrations/Init",
+    "db:migrate:revert": "cross-env TS_NODE_PROJECT=tsconfig.typeorm.json typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts",
+    "db:seed": "cross-env TS_NODE_PROJECT=tsconfig.typeorm.json ts-node src/database/seed.ts",
+    "db:reset": "cross-env TS_NODE_PROJECT=tsconfig.typeorm.json typeorm-ts-node-commonjs schema:drop -d src/database/data-source.ts && cross-env TS_NODE_PROJECT=tsconfig.typeorm.json typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
+    "db:schema:sync": "cross-env TS_NODE_PROJECT=tsconfig.typeorm.json typeorm-ts-node-commonjs schema:sync -d src/database/data-source.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
@@ -70,6 +70,7 @@
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.20.0",
     "@typescript-eslint/parser": "^8.20.0",
+    "cross-env": "^10.1.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.2",
