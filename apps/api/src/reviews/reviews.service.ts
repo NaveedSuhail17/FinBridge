@@ -80,7 +80,7 @@ export class ReviewsService {
     const [data, total] = await this.reviewRepo.findAndCount({
       where: { tenantId: In(tenantIds), status: ReviewStatus.PENDING },
       relations: ['extractionResult'],
-      order: { createdAt: 'ASC' },
+      order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
     });
