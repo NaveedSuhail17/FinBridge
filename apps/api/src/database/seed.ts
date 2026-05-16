@@ -722,7 +722,7 @@ async function main() {
         rawResponse: JSON.stringify({
           vendor_name: vendor,
           invoice_number: `INV-${2024000 + i + 1}`,
-          total,
+          total_amount: total,
         }),
         parsedResponse: {
           vendor_name: vendor,
@@ -730,8 +730,8 @@ async function main() {
           invoice_date: invoiceDate.toISOString(),
           currency: 'INR',
           subtotal,
-          tax,
-          total,
+          tax_amount: tax,
+          total_amount: total,
           confidence: 0.85 + Math.random() * 0.1,
         },
         confidenceScore: 85 + Math.random() * 10,
