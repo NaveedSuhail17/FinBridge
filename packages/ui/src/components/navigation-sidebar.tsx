@@ -53,7 +53,12 @@ export function NavigationSidebar({
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-1 px-2">
           {visible.map((item) => {
-            const isActive = currentPath === item.href || currentPath?.startsWith(item.href + '/');
+            const isActive =
+              currentPath === item.href ||
+              (currentPath?.startsWith(item.href + '/') &&
+                !visible.some(
+                  (other) => other.href !== item.href && currentPath?.startsWith(other.href),
+                ));
 
             return (
               <li key={item.href}>
