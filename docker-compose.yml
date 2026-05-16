@@ -87,7 +87,7 @@ services:
       dockerfile: infrastructure/docker/Dockerfile.web
       args:
         # NEXT_PUBLIC_* vars must be baked at build time — runtime env has no effect
-        NEXT_PUBLIC_API_URL: http://localhost:3001
+        NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
     container_name: finbridge-web
     restart: unless-stopped
     ports:
