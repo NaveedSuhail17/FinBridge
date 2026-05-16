@@ -25,12 +25,13 @@ export const auditService = {
     return data as AuditLogListResponse;
   },
 
-  exportCsvUrl(filters: AuditLogFilters = {}): string {
+  exportCsvUrl(filters: AuditLogFilters = {}, token?: string | null): string {
     const params = new URLSearchParams(
       Object.entries(filters)
         .filter(([, v]) => v != null)
         .map(([k, v]) => [k, String(v)]),
     );
+    if (token) params.set('token', token);
     const base =
       (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) ||
       'http://localhost:3001/api/v1';

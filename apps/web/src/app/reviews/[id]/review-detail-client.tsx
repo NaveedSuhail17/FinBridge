@@ -157,6 +157,7 @@ const REVIEWER_ROLES: UserRole[] = [UserRole.ACCOUNTING_FIRM_ADMIN, UserRole.ACC
 export function ReviewDetailClient({ id }: { id: string }) {
   const router = useRouter();
   const currentUser = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
   const canReview = currentUser ? REVIEWER_ROLES.includes(currentUser.role) : false;
   const [review, setReview] = useState<ReviewDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -288,7 +289,7 @@ export function ReviewDetailClient({ id }: { id: string }) {
   const parsed = review.extractionResult?.parsedResponse ?? {};
   const confidences = review.extractionResult?.fieldConfidences ?? {};
   const documentType = review.extractionResult?.extractionJob?.documentType ?? 'INVOICE';
-  const documentUrl = review.upload?.id ? uploadsService.fileUrl(review.upload.id) : '';
+  const documentUrl = review.upload?.id ? uploadsService.fileUrl(review.upload.id, token) : '';
   const isImage = review.upload?.mimeType?.startsWith('image/');
   const isInvoice = documentType === 'INVOICE';
 

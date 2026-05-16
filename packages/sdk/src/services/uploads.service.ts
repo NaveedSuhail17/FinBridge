@@ -69,17 +69,19 @@ export const uploadsService = {
     await apiClient.delete(`/uploads/${id}`);
   },
 
-  fileUrl(id: string): string {
+  fileUrl(id: string, token?: string | null): string {
     const base =
       (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) ||
       'http://localhost:3001/api/v1';
-    return `${base}/uploads/${id}/file`;
+    const url = `${base}/uploads/${id}/file`;
+    return token ? `${url}?token=${encodeURIComponent(token)}` : url;
   },
 
-  downloadUrl(id: string): string {
+  downloadUrl(id: string, token?: string | null): string {
     const base =
       (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) ||
       'http://localhost:3001/api/v1';
-    return `${base}/uploads/${id}/download`;
+    const url = `${base}/uploads/${id}/download`;
+    return token ? `${url}?token=${encodeURIComponent(token)}` : url;
   },
 };
