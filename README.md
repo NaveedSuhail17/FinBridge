@@ -451,18 +451,18 @@ finbridge/
 
 ## Troubleshooting
 
-| Symptom                                 | Cause                                       | Fix                                                                                            |
-| --------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `docker compose up --build` fails       | Node/pnpm version mismatch inside container | Verify Docker Desktop is up-to-date; try `docker compose down -v && docker compose up --build` |
-| Login returns 401                       | Missing or wrong `JWT_SECRET`               | Check `.env` — `JWT_SECRET` must be set                                                        |
-| Extraction stays "Processing" forever   | Invalid or missing `ANTHROPIC_API_KEY`      | Add a valid key to `.env`; restart the API                                                     |
-| Upload returns 400                      | Wrong file type or file > 10 MB             | Only PDF, PNG, JPEG accepted; max 10 MB                                                        |
-| `ThrottlerException: Too Many Requests` | Rate limiter hit (30 req / 60 s)            | Wait 60 seconds; triggered by rapid automated testing, not normal usage                        |
-| Port 3001 already in use                | Previous API process still running          | `docker compose down` or `kill $(lsof -ti:3001)`                                               |
-| Port 3000 already in use                | Previous Next.js process                    | `docker compose down` or `kill $(lsof -ti:3000)`                                               |
-| `pnpm: command not found`               | pnpm not installed                          | `npm install -g pnpm`                                                                          |
-| DB tables missing after `pnpm dev`      | Schema not synced                           | Run `pnpm db:schema:sync && pnpm db:seed`                                                      |
-| Swagger shows no routes                 | API compiled with errors                    | Check terminal for TypeScript errors; run `pnpm -C apps/api build`                             |
+| Symptom                                 | Cause                                       | Fix                                                                                                                                                          |
+| --------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `docker compose up --build` fails       | Node/pnpm version mismatch inside container | Verify Docker Desktop is up-to-date; try `docker compose down -v && docker compose up --build`                                                               |
+| Login returns 401                       | Missing or wrong `JWT_SECRET`               | Check `.env` — `JWT_SECRET` must be set                                                                                                                      |
+| Extraction stays "Processing" forever   | Invalid or missing `ANTHROPIC_API_KEY`      | Add a valid key to `.env`; restart the API                                                                                                                   |
+| Upload returns 400                      | Wrong file type or file > 10 MB             | Only PDF, PNG, JPEG accepted; max 10 MB                                                                                                                      |
+| `ThrottlerException: Too Many Requests` | Rate limiter hit (30 req / 60 s)            | Wait 60 seconds; triggered by rapid automated testing, not normal usage                                                                                      |
+| Port 3001 already in use                | Previous API process still running          | Run `docker compose down`, then `docker compose up`. On Windows, find the PID with `netstat -ano \| findstr :3001` and kill it with `taskkill /PID <PID> /F` |
+| Port 3000 already in use                | Previous Next.js process                    | Run `docker compose down`, then `docker compose up`. On Windows, find the PID with `netstat -ano \| findstr :3000` and kill it with `taskkill /PID <PID> /F` |
+| `pnpm: command not found`               | pnpm not installed                          | `npm install -g pnpm`                                                                                                                                        |
+| DB tables missing after `pnpm dev`      | Schema not synced                           | Run `pnpm db:schema:sync && pnpm db:seed`                                                                                                                    |
+| Swagger shows no routes                 | API compiled with errors                    | Check terminal for TypeScript errors; run `pnpm -C apps/api build`                                                                                           |
 
 ---
 
