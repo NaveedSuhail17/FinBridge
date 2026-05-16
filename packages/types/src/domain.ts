@@ -33,6 +33,7 @@ export enum ExtractionStatus {
 
 export enum FileType {
   INVOICE = 'INVOICE',
+  PAYMENT = 'PAYMENT',
   BANK_STATEMENT = 'BANK_STATEMENT',
   SALARY_REGISTER = 'SALARY_REGISTER',
   LEDGER = 'LEDGER',

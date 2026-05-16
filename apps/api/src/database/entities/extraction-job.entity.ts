@@ -9,7 +9,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { ExtractionStatus } from './enums';
+import { ExtractionStatus, FileType } from './enums';
 import { Tenant } from './tenant.entity';
 import { Upload } from './upload.entity';
 import { ExtractionResult } from './extraction-result.entity';
@@ -31,6 +31,9 @@ export class ExtractionJob {
 
   @Column({ name: 'prompt_version' })
   promptVersion: string;
+
+  @Column({ name: 'document_type', type: 'enum', enum: FileType, nullable: true })
+  documentType: FileType | null;
 
   @Column({ name: 'error_message', nullable: true, type: 'text' })
   errorMessage: string | null;

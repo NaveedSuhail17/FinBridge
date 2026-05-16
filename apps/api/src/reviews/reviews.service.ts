@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ConflictException,
@@ -11,12 +12,16 @@ import { ReviewHistory } from '../database/entities/review-history.entity';
 import { ExtractionResult } from '../database/entities/extraction-result.entity';
 import { ExtractionJob } from '../database/entities/extraction-job.entity';
 import { Invoice } from '../database/entities/invoice.entity';
+import { PaymentRecord } from '../database/entities/payment-record.entity';
+import { SalaryRegisterRecord } from '../database/entities/salary-register-record.entity';
+import { BankStatementRecord } from '../database/entities/bank-statement-record.entity';
 import { Transaction } from '../database/entities/transaction.entity';
 import { Notification } from '../database/entities/notification.entity';
 import {
   ReviewStatus,
   TransactionStatus,
   ExtractionStatus,
+  FileType,
   AuditAction,
   NotificationType,
 } from '../database/entities/enums';
@@ -24,11 +29,14 @@ import { ApproveReviewDto } from './dto/approve-review.dto';
 import { RejectReviewDto } from './dto/reject-review.dto';
 import { EditReviewDto } from './dto/edit-review.dto';
 import { AuditLogService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const ESCALATION_HOURS = 48;
 
 @Injectable()
 export class ReviewsService {
+  private readonly logger = new Logger(ReviewsService.name);
+
   constructor(
     @InjectRepository(Review)
     private readonly reviewRepo: Repository<Review>,
@@ -40,11 +48,18 @@ export class ReviewsService {
     private readonly jobRepo: Repository<ExtractionJob>,
     @InjectRepository(Invoice)
     private readonly invoiceRepo: Repository<Invoice>,
+    @InjectRepository(PaymentRecord)
+    private readonly paymentRecordRepo: Repository<PaymentRecord>,
+    @InjectRepository(SalaryRegisterRecord)
+    private readonly salaryRegisterRepo: Repository<SalaryRegisterRecord>,
+    @InjectRepository(BankStatementRecord)
+    private readonly bankStatementRepo: Repository<BankStatementRecord>,
     @InjectRepository(Transaction)
     private readonly txRepo: Repository<Transaction>,
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
     private readonly auditService: AuditLogService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async findPending(
@@ -81,15 +96,105 @@ export class ReviewsService {
     tenantId: string,
     userId: string,
     dto: ApproveReviewDto,
-  ): Promise<Transaction> {
+  ): Promise<Transaction | Record<string, unknown>> {
     const review = await this.findOne(id, tenantId);
     if (review.status !== ReviewStatus.PENDING) {
       throw new ConflictException('Review is not in PENDING state');
     }
 
-    const result = await this.resultRepo.findOneBy({ id: review.extractionResultId });
+    const result = await this.resultRepo.findOne({
+      where: { id: review.extractionResultId },
+      relations: ['extractionJob', 'extractionJob.upload'],
+    });
     if (!result) throw new NotFoundException('Extraction result not found');
 
+    const documentType = result.extractionJob?.documentType ?? FileType.INVOICE;
+
+    // Validate invoice-specific requirements BEFORE mutating any state to
+    // prevent a partial-approve (review marked APPROVED but no Transaction created).
+    if (documentType === FileType.INVOICE) {
+      const parsed = result.parsedResponse as {
+        vendor_name?: string | null;
+        total_amount?: number | null;
+      };
+      if (!parsed.vendor_name || !parsed.total_amount) {
+        throw new BadRequestException(
+          'Required fields (vendor_name, total_amount) missing in extraction',
+        );
+      }
+      if (!dto.paymentHeadId || !dto.paymentSubHeadId) {
+        throw new BadRequestException('paymentHeadId and paymentSubHeadId are required to approve');
+      }
+    }
+
+    // Mark review approved regardless of doc type
+    await this.reviewRepo.update(id, {
+      status: ReviewStatus.APPROVED,
+      reviewedBy: userId,
+      completedAt: new Date(),
+    });
+
+    await this.auditService.log({
+      tenantId,
+      userId,
+      entityType: 'Review',
+      entityId: id,
+      action: AuditAction.APPROVE,
+    });
+
+    const uploadOwnerId = result.extractionJob?.upload?.uploadedBy;
+    if (uploadOwnerId) {
+      void this.notificationsService
+        .notify(
+          tenantId,
+          uploadOwnerId,
+          NotificationType.REVIEW_APPROVED,
+          'Your uploaded document has been approved by the accountant.',
+        )
+        .catch((err: unknown) =>
+          this.logger.error(
+            `Failed to send approval notification to ${uploadOwnerId}: ${String(err)}`,
+          ),
+        );
+    }
+
+    if (documentType === FileType.INVOICE) {
+      return this.approveInvoice(id, tenantId, result, dto);
+    }
+
+    if (documentType === FileType.PAYMENT) {
+      await this.paymentRecordRepo.update(
+        { extractionResultId: result.id },
+        { status: TransactionStatus.APPROVED },
+      );
+      return { documentType: FileType.PAYMENT, approved: true };
+    }
+
+    if (documentType === FileType.SALARY_REGISTER) {
+      await this.salaryRegisterRepo.update(
+        { extractionResultId: result.id },
+        { status: TransactionStatus.APPROVED },
+      );
+      return { documentType: FileType.SALARY_REGISTER, approved: true };
+    }
+
+    if (documentType === FileType.BANK_STATEMENT) {
+      await this.bankStatementRepo.update(
+        { extractionResultId: result.id },
+        { status: TransactionStatus.APPROVED },
+      );
+      return { documentType: FileType.BANK_STATEMENT, approved: true };
+    }
+
+    return { documentType, approved: true };
+  }
+
+  private async approveInvoice(
+    reviewId: string,
+    tenantId: string,
+    result: ExtractionResult,
+    dto: ApproveReviewDto,
+  ): Promise<Transaction> {
     const parsed = result.parsedResponse as {
       vendor_name: string | null;
       total_amount: number | null;
@@ -97,24 +202,14 @@ export class ReviewsService {
       currency: string | null;
     };
 
-    if (!parsed.vendor_name || !parsed.total_amount) {
-      throw new BadRequestException(
-        'Required fields (vendor_name, total_amount) missing in extraction',
-      );
-    }
-
-    if (!dto.paymentHeadId || !dto.paymentSubHeadId) {
-      throw new BadRequestException('paymentHeadId and paymentSubHeadId are required to approve');
-    }
-
     const invoice = await this.invoiceRepo.findOneBy({
-      uploadId: (result as { extractionJob?: { uploadId?: string } }).extractionJob?.uploadId,
+      uploadId: result.extractionJob?.uploadId,
     });
 
     const tx = await this.txRepo.save(
       this.txRepo.create({
         tenantId,
-        invoiceId: invoice?.id ?? id,
+        invoiceId: invoice?.id ?? reviewId,
         vendorName: parsed.vendor_name,
         amount: parsed.total_amount,
         currency: parsed.currency ?? 'INR',
@@ -126,23 +221,9 @@ export class ReviewsService {
       }),
     );
 
-    await this.reviewRepo.update(id, {
-      status: ReviewStatus.APPROVED,
-      reviewedBy: userId,
-      completedAt: new Date(),
-    });
-
     if (invoice) {
       await this.invoiceRepo.update(invoice.id, { status: TransactionStatus.APPROVED });
     }
-
-    await this.auditService.log({
-      tenantId,
-      userId,
-      entityType: 'Review',
-      entityId: id,
-      action: AuditAction.APPROVE,
-    });
 
     return tx;
   }
@@ -155,7 +236,7 @@ export class ReviewsService {
 
     const result = await this.resultRepo.findOne({
       where: { id: review.extractionResultId },
-      relations: ['extractionJob'],
+      relations: ['extractionJob', 'extractionJob.upload'],
     });
 
     await this.reviewRepo.update(id, {
@@ -168,6 +249,22 @@ export class ReviewsService {
 
     if (result?.extractionJob?.id) {
       await this.jobRepo.update(result.extractionJob.id, { status: ExtractionStatus.FAILED });
+    }
+
+    const uploadOwnerId = result?.extractionJob?.upload?.uploadedBy;
+    if (uploadOwnerId) {
+      void this.notificationsService
+        .notify(
+          tenantId,
+          uploadOwnerId,
+          NotificationType.REVIEW_REJECTED,
+          `Your uploaded document was rejected. Reason: ${dto.rejectionReason}`,
+        )
+        .catch((err: unknown) =>
+          this.logger.error(
+            `Failed to send rejection notification to ${uploadOwnerId}: ${String(err)}`,
+          ),
+        );
     }
 
     await this.auditService.log({

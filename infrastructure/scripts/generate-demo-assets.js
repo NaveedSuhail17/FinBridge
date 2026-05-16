@@ -805,6 +805,106 @@ function createSupportingPDF(outputPath, title, content) {
   });
 }
 
+function createPaymentReceiptPDF(outputPath, payment) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const stream = fs.createWriteStream(outputPath);
+    doc.pipe(stream);
+
+    const W = doc.page.width;
+    const L = 50;
+    const R = W - 50;
+
+    // Header bar
+    doc.rect(0, 0, W, 90).fill(GREEN);
+    doc.fillColor('white').font('Helvetica-Bold').fontSize(26).text('PAYMENT RECEIPT', L, 22);
+    doc
+      .fillColor('white')
+      .font('Helvetica')
+      .fontSize(10)
+      .text('Official Payment Confirmation', L, 55)
+      .text(`Ref: ${payment.reference_number}`, L, 68);
+
+    // Status stamp
+    doc.rect(R - 140, 20, 120, 50).fill('white');
+    doc
+      .fillColor(GREEN)
+      .font('Helvetica-Bold')
+      .fontSize(14)
+      .text('PAID', R - 130, 38, { width: 100, align: 'center' });
+
+    // Payment details
+    let y = 115;
+    const addRow = (label, value) => {
+      doc.fillColor(GREY_MID).font('Helvetica').fontSize(9).text(label, L, y, { width: 160 });
+      doc
+        .fillColor(BRAND_DARK)
+        .font('Helvetica-Bold')
+        .fontSize(9)
+        .text(value || '—', L + 170, y);
+      y += 22;
+    };
+
+    doc.fillColor(BRAND_DARK).font('Helvetica-Bold').fontSize(12).text('Payment Details', L, y);
+    y += 20;
+    doc.moveTo(L, y).lineTo(R, y).strokeColor('#E2E8F0').lineWidth(1).stroke();
+    y += 10;
+
+    addRow('Payer', payment.payer);
+    addRow('Payee', payment.payee);
+    addRow(
+      'Amount',
+      `${payment.currency} ${new Intl.NumberFormat('en-IN').format(payment.amount)}`,
+    );
+    addRow('Payment Date', formatDate(payment.payment_date));
+    addRow('Payment Mode', payment.payment_mode);
+    addRow('Reference / UTR No.', payment.reference_number);
+    if (payment.bank_name) addRow('Bank', payment.bank_name);
+    if (payment.notes) addRow('Notes', payment.notes);
+
+    // Footer
+    doc
+      .fillColor(GREY_MID)
+      .font('Helvetica')
+      .fontSize(8)
+      .text('This is a system-generated payment receipt.', L, doc.page.height - 40, {
+        align: 'center',
+        width: R - L,
+      });
+
+    doc.end();
+    stream.on('finish', resolve);
+    stream.on('error', reject);
+  });
+}
+
+const PAYMENT_RECEIPTS = [
+  {
+    filename: 'payment-receipt-01.pdf',
+    payer: 'TechVision Solutions',
+    payee: 'Tech Solutions Pvt Ltd',
+    amount: 185378,
+    currency: 'INR',
+    payment_date: '2024-01-10',
+    payment_mode: 'NEFT',
+    reference_number: 'HDFCN24010512345',
+    bank_name: 'HDFC Bank',
+    notes: 'Payment against INV-2024-001842',
+  },
+  {
+    filename: 'payment-receipt-02.pdf',
+    payer: 'Apex Manufacturing Ltd',
+    payee: 'FastFreight Logistics',
+    amount: 31860,
+    currency: 'INR',
+    payment_date: '2024-02-15',
+    payment_mode: 'UPI',
+    reference_number: 'UPI-240215-987654321',
+    bank_name: null,
+    notes: 'Payment against INV-2024-007841',
+  },
+];
+
 async function main() {
   console.log('🚀 Generating FinBridge demo assets...\n');
 
@@ -814,6 +914,14 @@ async function main() {
     const outPath = path.join(DEMO_DIR, 'invoices', inv.filename);
     await createInvoicePDF(outPath, inv);
     console.log(`  ✓ demo-assets/invoices/${inv.filename}`);
+  }
+
+  // ── Payment receipts ─────────────────────────────────────────────────────────
+  ensureDir(path.join(DEMO_DIR, 'payment-receipts'));
+  for (const pmt of PAYMENT_RECEIPTS) {
+    const outPath = path.join(DEMO_DIR, 'payment-receipts', pmt.filename);
+    await createPaymentReceiptPDF(outPath, pmt);
+    console.log(`  ✓ demo-assets/payment-receipts/${pmt.filename}`);
   }
 
   // ── Supporting documents ─────────────────────────────────────────────────────

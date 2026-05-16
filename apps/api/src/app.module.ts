@@ -22,6 +22,10 @@ import { AiModule } from './ai/ai.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { ReportsModule } from './reports/reports.module';
+import { PaymentRecordsModule } from './payment-records/payment-records.module';
+import { SalaryRegistersModule } from './salary-registers/salary-registers.module';
+import { BankStatementsModule } from './bank-statements/bank-statements.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import {
   PlatformUser,
   Tenant,
@@ -45,6 +49,9 @@ import {
   MISReport,
   AuditLog,
   Notification,
+  PaymentRecord,
+  SalaryRegisterRecord,
+  BankStatementRecord,
 } from './database/entities';
 
 @Module({
@@ -81,6 +88,9 @@ import {
           MISReport,
           AuditLog,
           Notification,
+          PaymentRecord,
+          SalaryRegisterRecord,
+          BankStatementRecord,
         ],
         synchronize: false,
         logging: config.get<string>('NODE_ENV') === 'development',
@@ -117,6 +127,10 @@ import {
     ReviewsModule,
     TransactionsModule,
     ReportsModule,
+    PaymentRecordsModule,
+    SalaryRegistersModule,
+    BankStatementsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

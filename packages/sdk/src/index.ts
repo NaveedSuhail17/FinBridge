@@ -63,6 +63,23 @@ export type { AuditLogFilters, AuditLogListResponse } from './services/audit.ser
 export { extractionService } from './services/extraction.service';
 export type { ExtractionJobStatus } from './services/extraction.service';
 
+export { notificationsService } from './services/notifications.service';
+export type { NotificationItem, NotificationListResponse } from './services/notifications.service';
+
+export { bankStatementsService } from './services/bank-statements.service';
+export type { BankStatementRecord, BankTransactionRow } from './services/bank-statements.service';
+
+export { insightsService } from './services/insights.service';
+export type {
+  CashFlowMonth,
+  CashFlowResponse,
+  ExpenseHeadEntry,
+  TopExpenseHeadsResponse,
+  UploadFunnelResponse,
+  VendorEntry,
+  VendorSummaryResponse,
+} from './services/insights.service';
+
 // Hooks
 export { useAuth } from './hooks/useAuth';
 export { useTenant } from './hooks/useTenant';
@@ -71,3 +88,5 @@ export type { UploadStatus, UploadState } from './hooks/useUpload';
 export { useExtraction } from './hooks/useExtraction';
 export { useReview } from './hooks/useReview';
 export { useTransactionList } from './hooks/useTransaction';
+export { useNotifications } from './hooks/useNotifications';
+export type { UseNotificationsResult } from './hooks/useNotifications';

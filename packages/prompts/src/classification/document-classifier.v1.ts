@@ -4,7 +4,7 @@ export const DOCUMENT_CLASSIFICATION_PROMPT = `You are a financial document clas
 
 Return ONLY valid JSON:
 {
-  "document_type": "INVOICE" | "BANK_STATEMENT" | "SALARY_REGISTER" | "LEDGER" | "MIS_REPORT" | "UNKNOWN",
+  "document_type": "INVOICE" | "PAYMENT" | "BANK_STATEMENT" | "SALARY_REGISTER" | "LEDGER" | "MIS_REPORT" | "UNKNOWN",
   "confidence": 0-100,
   "reason": "brief explanation"
 }`;

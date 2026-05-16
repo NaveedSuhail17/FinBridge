@@ -8,6 +8,9 @@ export interface ReviewDetail extends Review {
     rawResponse: string;
     confidenceScore: number;
     fieldConfidences?: Record<string, number>;
+    extractionJob?: {
+      documentType?: string;
+    };
   };
   upload: {
     id: string;

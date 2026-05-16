@@ -23,6 +23,9 @@ import { BusinessTypeTemplate } from './entities/business-type-template.entity';
 import { MISReport } from './entities/mis-report.entity';
 import { AuditLog } from './entities/audit-log.entity';
 import { Notification } from './entities/notification.entity';
+import { PaymentRecord } from './entities/payment-record.entity';
+import { SalaryRegisterRecord } from './entities/salary-register-record.entity';
+import { BankStatementRecord } from './entities/bank-statement-record.entity';
 
 dotenv.config({ path: '../../.env' });
 
@@ -54,6 +57,9 @@ export const AppDataSource = new DataSource({
     MISReport,
     AuditLog,
     Notification,
+    PaymentRecord,
+    SalaryRegisterRecord,
+    BankStatementRecord,
   ],
   migrations: ['src/database/migrations/*.ts'],
   migrationsTableName: 'migrations',

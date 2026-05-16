@@ -1,17 +1,78 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, FindOptionsWhere } from 'typeorm';
+import { Repository, Between, FindOptionsWhere, In } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { MISReport } from '../database/entities/mis-report.entity';
 import { Transaction } from '../database/entities/transaction.entity';
-import { AuditAction } from '../database/entities/enums';
+import { ExtractionJob } from '../database/entities/extraction-job.entity';
+import { Review } from '../database/entities/review.entity';
+import { Upload } from '../database/entities/upload.entity';
+import {
+  AuditAction,
+  ExtractionStatus,
+  ReviewStatus,
+  TransactionStatus,
+} from '../database/entities/enums';
 import { GenerateReportDto, ReportType } from './dto/generate-report.dto';
 import { ShareReportDto, ShareExpiry } from './dto/share-report.dto';
 import { StorageService } from '../uploads/storage/storage.service';
 import { AuditLogService } from '../audit/audit.service';
+
+const MONTH_LABELS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+export interface CashFlowMonth {
+  month: number;
+  label: string;
+  total: number;
+}
+export interface CashFlowResponse {
+  year: number;
+  months: CashFlowMonth[];
+}
+
+export interface ExpenseHeadEntry {
+  headId: string;
+  name: string;
+  total: number;
+  percentage: number;
+}
+export interface TopExpenseHeadsResponse {
+  period: number;
+  heads: ExpenseHeadEntry[];
+}
+
+export interface UploadFunnelResponse {
+  uploaded: number;
+  extracted: number;
+  reviewed: number;
+  approved: number;
+}
+
+export interface VendorEntry {
+  vendorName: string;
+  total: number;
+  count: number;
+}
+export interface VendorSummaryResponse {
+  period: number;
+  vendors: VendorEntry[];
+}
 
 interface GeneratedReport {
   id: string;
@@ -32,6 +93,12 @@ export class ReportsService {
     private readonly misReportRepo: Repository<MISReport>,
     @InjectRepository(Transaction)
     private readonly txRepo: Repository<Transaction>,
+    @InjectRepository(ExtractionJob)
+    private readonly jobRepo: Repository<ExtractionJob>,
+    @InjectRepository(Review)
+    private readonly reviewRepo: Repository<Review>,
+    @InjectRepository(Upload)
+    private readonly uploadRepo: Repository<Upload>,
     private readonly storageService: StorageService,
     private readonly auditService: AuditLogService,
     private readonly config: ConfigService,
@@ -148,6 +215,117 @@ export class ReportsService {
       action: AuditAction.CREATE,
     });
     return report;
+  }
+
+  async getCashFlow(tenantId: string, year?: number): Promise<CashFlowResponse> {
+    const targetYear = year ?? new Date().getFullYear();
+    const from = new Date(`${targetYear}-01-01T00:00:00.000Z`);
+    const to = new Date(`${targetYear}-12-31T23:59:59.999Z`);
+
+    const transactions = await this.txRepo.find({
+      where: { tenantId, status: TransactionStatus.APPROVED, transactionDate: Between(from, to) },
+      select: ['transactionDate', 'amount'],
+    });
+
+    const totals = new Array<number>(12).fill(0);
+    for (const t of transactions) {
+      const m = new Date(t.transactionDate).getMonth();
+      totals[m] += Number(t.amount);
+    }
+
+    return {
+      year: targetYear,
+      months: totals.map((total, i) => ({
+        month: i + 1,
+        label: MONTH_LABELS[i],
+        total: Math.round(total * 100) / 100,
+      })),
+    };
+  }
+
+  async getTopExpenseHeads(tenantId: string, period = 30): Promise<TopExpenseHeadsResponse> {
+    const since = new Date(Date.now() - period * 24 * 60 * 60 * 1000);
+
+    const transactions = await this.txRepo.find({
+      where: {
+        tenantId,
+        status: TransactionStatus.APPROVED,
+        transactionDate: Between(since, new Date()),
+      },
+      relations: ['paymentHead'],
+    });
+
+    const byHead: Record<string, { name: string; total: number }> = {};
+    let grandTotal = 0;
+    for (const t of transactions) {
+      const id = t.paymentHeadId;
+      const name = t.paymentHead?.name ?? id;
+      byHead[id] ??= { name, total: 0 };
+      byHead[id].total += Number(t.amount);
+      grandTotal += Number(t.amount);
+    }
+
+    const sorted = Object.entries(byHead)
+      .sort((a, b) => b[1].total - a[1].total)
+      .slice(0, 5);
+
+    return {
+      period,
+      heads: sorted.map(([headId, { name, total }]) => ({
+        headId,
+        name,
+        total: Math.round(total * 100) / 100,
+        percentage: grandTotal > 0 ? Math.round((total / grandTotal) * 10000) / 100 : 0,
+      })),
+    };
+  }
+
+  async getUploadFunnel(tenantId: string): Promise<UploadFunnelResponse> {
+    const [uploaded, extracted, reviewed, approved] = await Promise.all([
+      this.uploadRepo.count({ where: { tenantId } }),
+      this.jobRepo.count({
+        where: {
+          tenantId,
+          status: In([ExtractionStatus.COMPLETED, ExtractionStatus.COMPLETED_WITH_ERRORS]),
+        },
+      }),
+      this.reviewRepo.count({ where: { tenantId } }),
+      this.reviewRepo.count({ where: { tenantId, status: ReviewStatus.APPROVED } }),
+    ]);
+    return { uploaded, extracted, reviewed, approved };
+  }
+
+  async getVendorSummary(tenantId: string, period = 30): Promise<VendorSummaryResponse> {
+    const since = new Date(Date.now() - period * 24 * 60 * 60 * 1000);
+
+    const transactions = await this.txRepo.find({
+      where: {
+        tenantId,
+        status: TransactionStatus.APPROVED,
+        transactionDate: Between(since, new Date()),
+      },
+      select: ['vendorName', 'amount'],
+    });
+
+    const byVendor: Record<string, { total: number; count: number }> = {};
+    for (const t of transactions) {
+      byVendor[t.vendorName] ??= { total: 0, count: 0 };
+      byVendor[t.vendorName].total += Number(t.amount);
+      byVendor[t.vendorName].count += 1;
+    }
+
+    const sorted = Object.entries(byVendor)
+      .sort((a, b) => b[1].total - a[1].total)
+      .slice(0, 10);
+
+    return {
+      period,
+      vendors: sorted.map(([vendorName, { total, count }]) => ({
+        vendorName,
+        total: Math.round(total * 100) / 100,
+        count,
+      })),
+    };
   }
 
   async findAll(tenantId: string): Promise<MISReport[]> {

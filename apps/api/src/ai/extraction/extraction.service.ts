@@ -4,15 +4,28 @@ import { Repository } from 'typeorm';
 import { ExtractionJob } from '../../database/entities/extraction-job.entity';
 import { ExtractionResult } from '../../database/entities/extraction-result.entity';
 import { Invoice } from '../../database/entities/invoice.entity';
+import { PaymentRecord } from '../../database/entities/payment-record.entity';
+import { SalaryRegisterRecord } from '../../database/entities/salary-register-record.entity';
+import { BankStatementRecord } from '../../database/entities/bank-statement-record.entity';
 import { Review } from '../../database/entities/review.entity';
 import { Upload } from '../../database/entities/upload.entity';
-import { ExtractionStatus, ReviewStatus } from '../../database/entities/enums';
+import {
+  ExtractionStatus,
+  ReviewStatus,
+  FileType,
+  TransactionStatus,
+} from '../../database/entities/enums';
 import { ClaudeVisionService } from './claude-vision.service';
 import { FinancialValidatorService } from './financial-validator.service';
 import { ConfidenceScoreService } from './confidence-score.service';
-import { InvoiceExtractionSchema, InvoiceExtraction } from '../validators/extraction-schemas';
+import { DocumentTypeRouterService } from './document-type-router.service';
+import { BankStatementCategorizationService } from './bank-statement-categorization.service';
+import {
+  InvoiceExtractionSchema,
+  InvoiceExtraction,
+  ClassificationSchema,
+} from '../validators/extraction-schemas';
 import { INVOICE_EXTRACTION_PROMPT, DOCUMENT_CLASSIFICATION_PROMPT } from '@finbridge/prompts';
-import { ClassificationSchema } from '../validators/extraction-schemas';
 import { StorageService } from '../../uploads/storage/storage.service';
 
 @Injectable()
@@ -26,6 +39,12 @@ export class ExtractionService {
     private readonly resultRepo: Repository<ExtractionResult>,
     @InjectRepository(Invoice)
     private readonly invoiceRepo: Repository<Invoice>,
+    @InjectRepository(PaymentRecord)
+    private readonly paymentRecordRepo: Repository<PaymentRecord>,
+    @InjectRepository(SalaryRegisterRecord)
+    private readonly salaryRegisterRepo: Repository<SalaryRegisterRecord>,
+    @InjectRepository(BankStatementRecord)
+    private readonly bankStatementRepo: Repository<BankStatementRecord>,
     @InjectRepository(Review)
     private readonly reviewRepo: Repository<Review>,
     @InjectRepository(Upload)
@@ -33,7 +52,9 @@ export class ExtractionService {
     private readonly claudeVision: ClaudeVisionService,
     private readonly financialValidator: FinancialValidatorService,
     private readonly confidenceScorer: ConfidenceScoreService,
+    private readonly documentTypeRouter: DocumentTypeRouterService,
     private readonly storageService: StorageService,
+    private readonly categorizationService: BankStatementCategorizationService,
   ) {}
 
   async processJob(jobId: string, uploadId: string, tenantId: string): Promise<void> {
@@ -49,7 +70,7 @@ export class ExtractionService {
       const upload = await this.uploadRepo.findOneBy({ id: uploadId });
       if (!upload) throw new Error(`Upload ${uploadId} not found`);
 
-      // Classify document first
+      // Step 1: Classify document
       const classificationRaw = await this.claudeVision.analyzeImage(
         upload.filePath,
         DOCUMENT_CLASSIFICATION_PROMPT,
@@ -57,70 +78,150 @@ export class ExtractionService {
       const classificationJson = JSON.parse(classificationRaw);
       const classification = ClassificationSchema.parse(classificationJson);
 
-      if (classification.document_type !== 'INVOICE') {
-        throw new Error(`Document classified as ${classification.document_type}, not INVOICE`);
+      // Update Upload.fileType from classifier result (classifier wins over user hint)
+      const classifiedFileType = this.mapDocTypeToFileType(classification.document_type);
+      if (classifiedFileType) {
+        await this.uploadRepo.update(uploadId, { fileType: classifiedFileType });
       }
 
-      // Extract invoice data
-      const rawResponse = await this.claudeVision.analyzeImage(
-        upload.filePath,
-        INVOICE_EXTRACTION_PROMPT,
-      );
-      let parsed: InvoiceExtraction;
+      // Step 2: Extract based on document type
+      let rawResponse: string;
+      let parsedResponse: Record<string, unknown>;
+      let validationErrors: string[];
+      let confidenceScore: number;
 
-      try {
-        const json = JSON.parse(rawResponse);
-        parsed = InvoiceExtractionSchema.parse(json);
-      } catch {
-        throw new Error(`Failed to parse extraction response: ${rawResponse.slice(0, 200)}`);
-      }
+      if (classification.document_type === 'INVOICE') {
+        // Existing invoice path
+        rawResponse = await this.claudeVision.analyzeImage(
+          upload.filePath,
+          INVOICE_EXTRACTION_PROMPT,
+        );
+        let parsed: InvoiceExtraction;
+        try {
+          const json = JSON.parse(rawResponse);
+          parsed = InvoiceExtractionSchema.parse(json);
+        } catch {
+          throw new Error(`Failed to parse invoice extraction: ${rawResponse.slice(0, 200)}`);
+        }
+        validationErrors = this.financialValidator.validate(parsed);
+        confidenceScore = this.confidenceScorer.computeOverall(parsed);
+        parsedResponse = parsed as unknown as Record<string, unknown>;
 
-      const validationErrors = this.financialValidator.validate(parsed);
-      const overallConfidence = this.confidenceScorer.computeOverall(parsed);
+        // Set job documentType
+        await this.jobRepo.update(jobId, { documentType: FileType.INVOICE });
 
-      if (!this.confidenceScorer.meetsThreshold(parsed)) {
-        await this.jobRepo.update(jobId, {
-          status: ExtractionStatus.COMPLETED_WITH_ERRORS,
-          errorMessage: `Confidence too low: ${overallConfidence}%. Requires manual review.`,
-        });
-      }
-
-      const result = await this.resultRepo.save(
-        this.resultRepo.create({
-          extractionJobId: jobId,
+        const result = await this.saveExtractionResult(
+          jobId,
           rawResponse,
-          parsedResponse: parsed as unknown as Record<string, unknown>,
-          confidenceScore: overallConfidence,
+          parsedResponse,
+          confidenceScore,
           validationErrors,
-        }),
-      );
+        );
 
-      // Create invoice record
-      await this.invoiceRepo.save(
-        this.invoiceRepo.create({
-          tenantId,
-          uploadId,
-          vendorName: parsed.vendor_name,
-          invoiceNumber: parsed.invoice_number,
-          invoiceDate: parsed.invoice_date ? new Date(parsed.invoice_date) : null,
-          amount: parsed.total_amount,
-          subtotal: parsed.subtotal,
-          taxAmount: parsed.tax_amount,
-          currency: parsed.currency ?? 'INR',
-        }),
-      );
+        // Create Invoice record
+        await this.invoiceRepo.save(
+          this.invoiceRepo.create({
+            tenantId,
+            uploadId,
+            vendorName: parsed.vendor_name,
+            invoiceNumber: parsed.invoice_number,
+            invoiceDate: parsed.invoice_date ? new Date(parsed.invoice_date) : null,
+            amount: parsed.total_amount,
+            subtotal: parsed.subtotal,
+            taxAmount: parsed.tax_amount,
+            currency: parsed.currency ?? 'INR',
+          }),
+        );
 
-      // Create review entry for accountant
-      await this.reviewRepo.save(
-        this.reviewRepo.create({
-          tenantId,
-          extractionResultId: result.id,
-          status: ReviewStatus.PENDING,
-        }),
-      );
+        await this.createReview(tenantId, result.id, confidenceScore);
+      } else {
+        // Non-invoice path via DocumentTypeRouter
+        const routeResult = await this.documentTypeRouter.route(classification, upload.filePath);
+        rawResponse = routeResult.result.rawResponse;
+        parsedResponse = routeResult.result.parsed as unknown as Record<string, unknown>;
+        validationErrors = routeResult.result.validationErrors;
+        confidenceScore = routeResult.result.confidenceScore;
 
-      await this.jobRepo.update(jobId, { status: ExtractionStatus.COMPLETED });
-      this.logger.log(`Extraction job ${jobId} completed. Confidence: ${overallConfidence}%`);
+        await this.jobRepo.update(jobId, { documentType: routeResult.documentType });
+
+        const result = await this.saveExtractionResult(
+          jobId,
+          rawResponse,
+          parsedResponse,
+          confidenceScore,
+          validationErrors,
+        );
+
+        // Create the appropriate record entity
+        if (routeResult.documentType === FileType.PAYMENT) {
+          const p = routeResult.result.parsed;
+          await this.paymentRecordRepo.save(
+            this.paymentRecordRepo.create({
+              tenantId,
+              uploadId,
+              extractionResultId: result.id,
+              payer: p.payer,
+              payee: p.payee,
+              amount: p.amount,
+              currency: p.currency ?? 'INR',
+              paymentDate: p.payment_date ? new Date(p.payment_date) : null,
+              referenceNumber: p.reference_number,
+              paymentMode: p.payment_mode,
+              bankName: p.bank_name,
+              status: TransactionStatus.PENDING,
+            }),
+          );
+        } else if (routeResult.documentType === FileType.SALARY_REGISTER) {
+          const s = routeResult.result.parsed;
+          await this.salaryRegisterRepo.save(
+            this.salaryRegisterRepo.create({
+              tenantId,
+              uploadId,
+              extractionResultId: result.id,
+              companyName: s.company_name,
+              month: s.month,
+              year: s.year,
+              currency: s.currency ?? 'INR',
+              employeeCount: s.employee_rows.length,
+              totalGross: s.total_gross,
+              totalDeductions: s.total_deductions,
+              totalNet: s.total_net,
+              employeeRows: s.employee_rows as unknown as Record<string, unknown>[],
+              status: TransactionStatus.PENDING,
+            }),
+          );
+        } else if (routeResult.documentType === FileType.BANK_STATEMENT) {
+          const b = routeResult.result.parsed;
+          const bankRecord = await this.bankStatementRepo.save(
+            this.bankStatementRepo.create({
+              tenantId,
+              uploadId,
+              extractionResultId: result.id,
+              bankName: b.bank_name,
+              accountNumberMasked: b.account_number_masked,
+              accountHolder: b.account_holder,
+              currency: b.currency ?? 'INR',
+              periodStart: b.period_start ? new Date(b.period_start) : null,
+              periodEnd: b.period_end ? new Date(b.period_end) : null,
+              openingBalance: b.opening_balance,
+              closingBalance: b.closing_balance,
+              transactionRows: b.transaction_rows as unknown as Record<string, unknown>[],
+              status: TransactionStatus.PENDING,
+            }),
+          );
+          // Enrich rows with suggested payment head/sub-head via keyword matching
+          await this.categorizationService.categorize(bankRecord.id, tenantId);
+        }
+
+        await this.createReview(tenantId, result.id, confidenceScore);
+      }
+
+      const finalStatus =
+        confidenceScore < 70 ? ExtractionStatus.COMPLETED_WITH_ERRORS : ExtractionStatus.COMPLETED;
+      await this.jobRepo.update(jobId, { status: finalStatus });
+      this.logger.log(
+        `Extraction job ${jobId} completed (${classification.document_type}). Confidence: ${confidenceScore}%`,
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.error(`Extraction job ${jobId} failed: ${message}`);
@@ -138,5 +239,52 @@ export class ExtractionService {
     });
     if (!job) throw new Error('Extraction job not found');
     return job as ExtractionJob & { result?: ExtractionResult };
+  }
+
+  private async saveExtractionResult(
+    jobId: string,
+    rawResponse: string,
+    parsedResponse: Record<string, unknown>,
+    confidenceScore: number,
+    validationErrors: string[],
+  ): Promise<ExtractionResult> {
+    return this.resultRepo.save(
+      this.resultRepo.create({
+        extractionJobId: jobId,
+        rawResponse,
+        parsedResponse,
+        confidenceScore,
+        validationErrors,
+      }),
+    );
+  }
+
+  private async createReview(
+    tenantId: string,
+    extractionResultId: string,
+    confidenceScore: number,
+  ): Promise<void> {
+    await this.reviewRepo.save(
+      this.reviewRepo.create({
+        tenantId,
+        extractionResultId,
+        status: ReviewStatus.PENDING,
+      }),
+    );
+    this.logger.debug(
+      `Review created for result ${extractionResultId} (confidence: ${confidenceScore}%)`,
+    );
+  }
+
+  private mapDocTypeToFileType(docType: string): FileType | null {
+    const map: Record<string, FileType> = {
+      INVOICE: FileType.INVOICE,
+      PAYMENT: FileType.PAYMENT,
+      SALARY_REGISTER: FileType.SALARY_REGISTER,
+      BANK_STATEMENT: FileType.BANK_STATEMENT,
+      LEDGER: FileType.LEDGER,
+      MIS_REPORT: FileType.MIS_REPORT,
+    };
+    return map[docType] ?? null;
   }
 }

@@ -26,6 +26,13 @@ Phase 0 (Monorepo & Infra)
               ├─► Phase 4.2  UI Component Library ◄─ parallel with Phase 3
               └─► Phase 5    Frontend Features  ◄─ parallel, needs Phase 2 API live
                     └─► Phase 6  Demo Assets & Polish
+                          └─► Phase 7  Problem-Statement Enhancements
+                                ├─► 7.1  Multi-Document AI Extraction
+                                ├─► 7.2  Notification Center
+                                ├─► 7.3  Dashboard Analytics & Insights
+                                ├─► 7.4  Bulk Bank Statement + Auto-Categorization
+                                ├─► 7.5  PWA / Mobile
+                                └─► 7.6  Submission Assets (slides, video script, README)
 ```
 
 ---
@@ -349,22 +356,200 @@ All tables carry a `tenant_id` FK for multi-tenant isolation.
 
 ---
 
+## Phase 7 – Enhancements from Problem Statement
+
+> Enhancements derived from `FinBridge_Hackathon_Problem_Statement.pdf`. Items are grouped by judging weight so high-impact work is done first. All items follow the Phase Plan Method — create a `tmp/phase-7-<slug>.md` before coding each sub-phase.
+
+---
+
+### 7.1 Multi-Document Type AI Extraction _(AI capability — 25% judging weight)_
+
+The problem statement explicitly requires support for **payments, salary registers, and bank statements** alongside invoices. Current pipeline is invoice-only.
+
+#### 7.1.1 Prompt Templates (`packages/prompts/`)
+
+- [ ] `payments/payment.extraction.v1.ts` – extract: payer, payee, amount, payment_date, reference_number, payment_mode (cash/UPI/NEFT/cheque), bank_name
+- [ ] `salary-registers/salary-register.extraction.v1.ts` – extract: month/year, employee rows (name, designation, gross, deductions, net), employer name
+- [ ] `bank-statements/bank-statement.extraction.v1.ts` – extract: account_number (masked), bank_name, statement_period, transaction rows (date, description, debit, credit, balance)
+- [ ] `validators/payment-extraction-schema.ts` – Zod schema for payment extraction output
+- [ ] `validators/salary-register-extraction-schema.ts` – Zod schema for salary register extraction output
+- [ ] `validators/bank-statement-extraction-schema.ts` – Zod schema for bank statement extraction output
+
+#### 7.1.2 Backend Services (`apps/api/src/ai/`)
+
+- [ ] `DocumentTypeRouter` – extend `document-classifier.v1.ts` to route to the correct extraction service based on classified doc type (`INVOICE | PAYMENT | SALARY_REGISTER | BANK_STATEMENT`)
+- [ ] `PaymentExtractionService` – orchestrate: classify → extract payment → validate → score → store
+- [ ] `SalaryRegisterExtractionService` – orchestrate: classify → extract salary rows → validate totals → score → store
+- [ ] `BankStatementExtractionService` – orchestrate: classify → extract rows → validate running balance → score → store
+- [ ] `FinancialValidator` additions: validate payment reference formats, salary deduction totals, bank statement running balance continuity
+
+#### 7.1.3 Database Entities (new)
+
+- [ ] `PaymentRecord` entity – tenant_id, upload_id, payer, payee, amount, payment_date, reference_number, payment_mode, status
+- [ ] `SalaryRegisterRecord` entity – tenant_id, upload_id, month, year, employee_count, total_gross, total_net, raw_rows (JSON), status
+- [ ] `BankStatementRecord` entity – tenant_id, upload_id, account_number_masked, bank_name, period_start, period_end, opening_balance, closing_balance, transaction_rows (JSON), status
+
+#### 7.1.4 API Endpoints
+
+- [ ] `GET /ai/extract/:id` – extend polling response to include `document_type` field
+- [ ] `GET /payments` – list payment records with filters (date_range, payment_mode, amount_range)
+- [ ] `GET /salary-registers` – list salary register records with filters (month, year)
+- [ ] `GET /bank-statements` – list bank statement records with filters (period, bank_name)
+- [ ] Extend review workflow: `GET /reviews/pending` and `GET /reviews/:id` to serve all document types, not just invoices
+
+#### 7.1.5 Frontend Upload Center
+
+- [ ] Upload zone: document type selector (Invoice / Payment / Salary Register / Bank Statement) shown before/during upload
+- [ ] Per document type: appropriate extraction result display in the review UI (replace invoice-only form fields with dynamic field renderer keyed on `document_type`)
+
+**Acceptance:** Upload a salary register PDF → AI extracts employee rows → review shows structured table → accountant approves → `SalaryRegisterRecord` persisted.
+
+---
+
+### 7.2 In-App Notification Center _(stretch goal — contributes to UX 15% + creativity 10%)_
+
+The `Notification` entity exists in Phase 1 but no delivery mechanism or UI was built.
+
+#### 7.2.1 Backend (`apps/api/src/notifications/`)
+
+- [ ] `NotificationsService.notify(userId, type, message, entityId)` – persist to `Notification` table
+- [ ] Wire notification calls into `ReviewService.approve()` and `ReviewService.reject()` – notify company user when their uploaded transaction is accepted or rejected
+- [ ] Wire into `UploadService` – notify accountants when a new document arrives in their queue
+- [ ] `GET /notifications` – paginated, unread-first; `PATCH /notifications/:id/read`; `PATCH /notifications/read-all`
+- [ ] SSE endpoint `GET /notifications/stream` – Server-Sent Events for real-time push (no WebSocket infra needed)
+
+#### 7.2.2 Frontend (`apps/web/src/app/`)
+
+- [ ] `NotificationBell` component in `NavigationSidebar` top-bar – unread badge count
+- [ ] Dropdown notification list: icon + message + relative timestamp + mark-read on click
+- [ ] `useNotifications` hook in SDK – polls `/notifications` every 30 s (fallback if SSE unavailable); connects to SSE stream when available
+- [ ] Toast pop-up on new notification arrival (use shadcn/ui `toast`)
+
+**Acceptance:** Accountant approves a review → company user sees a toast and bell badge update within 30 s without page refresh.
+
+---
+
+### 7.3 Dashboard Analytics & Insights _(stretch goal — contributes to UX 15% + creativity 10%)_
+
+Current dashboard shows count cards only. Problem statement calls for cash flow trends and top expense heads.
+
+#### 7.3.1 Backend Reports API (`apps/api/src/reports/`)
+
+- [ ] `GET /reports/insights/cash-flow` – monthly income vs expense totals for last 12 months (from approved transactions); query params: `tenant_id`, `year`
+- [ ] `GET /reports/insights/top-expense-heads` – top 5 payment heads by total amount for a given period
+- [ ] `GET /reports/insights/upload-funnel` – uploads → extracted → reviewed → approved (pipeline conversion counts)
+- [ ] `GET /reports/insights/vendor-summary` – top 10 vendors by invoice total
+
+#### 7.3.2 Frontend Dashboard (`apps/web/src/app/dashboard/`)
+
+- [ ] **Company User:** `CashFlowChart` – Recharts `AreaChart` showing monthly inflow/outflow (12 months)
+- [ ] **Company User:** `TopExpenseHeadsChart` – Recharts `PieChart` of top 5 payment heads
+- [ ] **Firm Admin:** `UploadFunnelChart` – Recharts `FunnelChart` or stacked bar showing pipeline conversion
+- [ ] **Firm Admin / Accountant:** `VendorSummaryTable` – sortable top-vendors table with sparkline amounts
+- [ ] All charts: loading skeleton, empty state, date-range picker (last 30 / 90 / 365 days)
+
+**Acceptance:** Company User dashboard shows populated cash flow chart and expense pie using seeded transaction data.
+
+---
+
+### 7.4 Bulk Bank Statement Upload with Auto-Categorization _(stretch goal — creativity 10%)_
+
+#### 7.4.1 Backend
+
+- [ ] `POST /uploads/bulk` – accept multiple files (up to 20), queue one `ExtractionJob` per file, return job IDs array
+- [ ] `BankStatementCategorizationService` – after bank statement extraction, attempt to match each transaction row description against known `PaymentHead`/`SubHead` names using keyword matching; attach `suggested_head_id` and `suggested_sub_head_id` to each row
+- [ ] `GET /bank-statements/:id/categorized` – return rows with AI-suggested categories and confidence
+
+#### 7.4.2 Frontend
+
+- [ ] Upload zone: "Bulk Upload" tab – multi-file drop area with per-file progress bars
+- [ ] Bank statement review UI: spreadsheet-style table (read-only rows); each row shows extracted data + suggested category dropdown; accountant can override per-row and bulk-approve all
+
+**Acceptance:** Upload 3 bank statement PDFs at once → all 3 extraction jobs queued → review UI shows categorized rows with suggested heads.
+
+---
+
+### 7.5 PWA – Mobile Bill Upload _(stretch goal — creativity 10%)_
+
+- [ ] Add `apps/web/public/manifest.json` – `name`, `short_name`, `icons` (192×192, 512×512), `display: standalone`, `theme_color`
+- [ ] Add `next-pwa` package; configure `withPWA` in `next.config.js` – service worker with cache-first for static assets, network-first for API calls
+- [ ] `apps/web/public/sw.js` generated by next-pwa; register in `apps/web/src/app/layout.tsx`
+- [ ] Mobile-optimised upload page (`/uploads/mobile`) – large tap target camera/gallery button; calls same `POST /uploads` endpoint
+- [ ] Add `<meta name="viewport">` and responsive breakpoints to `MainLayout` for sub-480 px screens
+- [ ] Add "Install App" banner on mobile browsers (beforeinstallprompt handler)
+
+**Acceptance:** Chrome on Android shows "Add to Home Screen" prompt; installed PWA opens upload page; uploading a photo triggers extraction flow.
+
+---
+
+### 7.6 Submission Assets _(required for judging)_
+
+#### 7.6.1 Presentation Deck (`presentation/`)
+
+- [ ] `presentation/slides.md` – 5–8 slide outline:
+  1. Problem (the email/WhatsApp chaos)
+  2. Solution overview + tenant hierarchy diagram
+  3. Architecture (reuse Mermaid from `architecture.md`)
+  4. AI extraction demo screenshots (invoice + salary register)
+  5. Review workflow demo screenshots
+  6. What we'd build next (Tally/QuickBooks integration, mobile native, real-time collab)
+  7. Team slide
+- [ ] Export-ready slide content with key stats from seed data (e.g., "20 sample invoices, 4 business types, 95%+ extraction accuracy on test set")
+
+#### 7.6.2 Demo Video Script (`presentation/demo-video-script.md`)
+
+- [ ] 2–3 minute script covering: login as company user → upload invoice → switch to accountant → review & approve → check transaction + notification → show reports section
+- [ ] Include voice-over cues and screen-recording checkpoints
+- [ ] Note: record against `docker compose up` with seeded data for reproducibility
+
+#### 7.6.3 README Polish (`README.md`)
+
+- [ ] Add judging-criteria section explaining which features address each criterion
+- [ ] Add "What's next" roadmap callout (Tally/Zoho integration, payment gateway — explicitly out of scope per problem statement)
+- [ ] Verify one-command setup works end-to-end (`docker compose up --build`) and update any stale instructions
+
+**Acceptance:** Presentation deck covers all 7 required slide topics; README setup instructions verified clean on a fresh Docker environment.
+
+---
+
+### Phase 7 Dependency Order
+
+```
+Phase 6 (Complete)
+  └─► 7.1  Multi-Document AI Extraction  ← highest judging impact (AI 25%)
+        └─► 7.2  Notification Center      ← wires into review approval events
+  └─► 7.3  Dashboard Analytics           ← needs approved transactions from seed
+  └─► 7.4  Bulk Bank Statement Upload    ← builds on 7.1 bank statement extractor
+  └─► 7.5  PWA                           ← independent; needs working upload flow
+  └─► 7.6  Submission Assets             ← last; screenshots from completed features
+```
+
+---
+
 ## Critical Files Reference
 
-| File                                                 | Phase | Purpose                         |
-| ---------------------------------------------------- | ----- | ------------------------------- |
-| `pnpm-workspace.yaml`                                | 0     | Workspace package roots         |
-| `turbo.json`                                         | 0     | Turborepo pipeline config       |
-| `docker-compose.yml`                                 | 0     | Local PostgreSQL + Redis        |
-| `apps/api/src/database/entities/`                    | 1     | TypeORM entities (22 total)     |
-| `apps/api/src/database/seed.ts`                      | 1     | Demo seed data                  |
-| `apps/api/src/auth/`                                 | 2     | JWT auth module                 |
-| `apps/api/src/common/authorization/`                 | 2     | RBAC guards + decorators        |
-| `apps/api/src/ai/`                                   | 3.4   | AI extraction pipeline          |
-| `packages/prompts/invoices/invoice.extraction.v1.ts` | 3.4   | Versioned invoice prompt        |
-| `packages/types/index.ts`                            | 1     | Shared TS interfaces + enums    |
-| `packages/sdk/api-client.ts`                         | 4     | Axios SDK with interceptors     |
-| `apps/web/src/app/reviews/[id]/page.tsx`             | 5     | Review UI (highest-impact page) |
+| File                                                                 | Phase | Purpose                                   |
+| -------------------------------------------------------------------- | ----- | ----------------------------------------- |
+| `pnpm-workspace.yaml`                                                | 0     | Workspace package roots                   |
+| `turbo.json`                                                         | 0     | Turborepo pipeline config                 |
+| `docker-compose.yml`                                                 | 0     | Local PostgreSQL + Redis                  |
+| `apps/api/src/database/entities/`                                    | 1     | TypeORM entities (22 total)               |
+| `apps/api/src/database/seed.ts`                                      | 1     | Demo seed data                            |
+| `apps/api/src/auth/`                                                 | 2     | JWT auth module                           |
+| `apps/api/src/common/authorization/`                                 | 2     | RBAC guards + decorators                  |
+| `apps/api/src/ai/`                                                   | 3.4   | AI extraction pipeline                    |
+| `packages/prompts/invoices/invoice.extraction.v1.ts`                 | 3.4   | Versioned invoice prompt                  |
+| `packages/types/index.ts`                                            | 1     | Shared TS interfaces + enums              |
+| `packages/sdk/api-client.ts`                                         | 4     | Axios SDK with interceptors               |
+| `apps/web/src/app/reviews/[id]/page.tsx`                             | 5     | Review UI (highest-impact page)           |
+| `packages/prompts/payments/payment.extraction.v1.ts`                 | 7.1   | Payment document prompt                   |
+| `packages/prompts/salary-registers/salary-register.extraction.v1.ts` | 7.1   | Salary register prompt                    |
+| `packages/prompts/bank-statements/bank-statement.extraction.v1.ts`   | 7.1   | Bank statement prompt                     |
+| `apps/api/src/ai/extraction/document-type-router.ts`                 | 7.1   | Route to correct extractor by doc type    |
+| `apps/api/src/notifications/notifications.service.ts`                | 7.2   | Notification delivery + SSE stream        |
+| `apps/web/src/app/dashboard/`                                        | 7.3   | Insight charts (cash flow, expense heads) |
+| `apps/web/public/manifest.json`                                      | 7.5   | PWA manifest                              |
+| `presentation/slides.md`                                             | 7.6   | Judging submission deck                   |
 
 ---
 
@@ -375,5 +560,12 @@ All tables carry a `tenant_id` FK for multi-tenant isolation.
 - [ ] Login as `accountant@finbridge.com` → Review queue shows seeded pending reviews
 - [ ] Login as `user@company.com` → Upload an invoice → AI extracts data → review appears in accountant queue
 - [ ] Accountant approves review → Transaction created → visible in Transactions + Reports
+- [ ] Upload a salary register PDF → extraction routes to salary pipeline → review shows employee row table
+- [ ] Upload a bank statement PDF → extraction routes to bank statement pipeline → categorized rows shown
+- [ ] Accountant approves → company user receives in-app notification (bell badge + toast) within 30 s
+- [ ] Company User dashboard shows cash flow area chart and top-expense-heads pie chart
+- [ ] Bulk upload: drop 3 bank statement files → 3 jobs queued → all complete
+- [ ] Chrome mobile: "Add to Home Screen" prompt appears; PWA upload flow works
 - [ ] Swagger at `/api/docs` shows all endpoints with JWT auth
 - [ ] CI pipeline (lint + test + build) passes on GitHub
+- [ ] `presentation/slides.md` covers all 7 slide topics; README setup verified clean

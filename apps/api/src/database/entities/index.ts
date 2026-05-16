@@ -21,3 +21,6 @@ export * from './business-type-template.entity';
 export * from './mis-report.entity';
 export * from './audit-log.entity';
 export * from './notification.entity';
+export * from './payment-record.entity';
+export * from './salary-register-record.entity';
+export * from './bank-statement-record.entity';

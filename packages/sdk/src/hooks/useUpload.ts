@@ -22,13 +22,17 @@ export function useUpload() {
     error: null,
   });
 
-  const uploadFile = useCallback(async (file: File) => {
+  const uploadFile = useCallback(async (file: File, documentType?: string) => {
     setState({ status: 'uploading', progress: 0, upload: null, error: null });
 
     try {
-      const upload = await uploadsService.upload(file, (event: UploadProgressEvent) => {
-        setState((prev) => ({ ...prev, progress: event.percent }));
-      });
+      const upload = await uploadsService.upload(
+        file,
+        (event: UploadProgressEvent) => {
+          setState((prev) => ({ ...prev, progress: event.percent }));
+        },
+        documentType,
+      );
       setState({ status: 'processing', progress: 100, upload, error: null });
       return upload;
     } catch (err) {

@@ -29,41 +29,127 @@ import { AppShell } from '@/components/app-shell';
 import { ChevronLeft, Check, X, Pencil } from 'lucide-react';
 
 const REJECT_REASONS = [
-  'Duplicate invoice',
+  'Duplicate document',
   'Incorrect amount',
-  'Invalid vendor details',
+  'Invalid vendor/party details',
   'Missing required fields',
   'Document unclear/illegible',
   'Wrong tax calculation',
   'Other',
 ];
 
-function buildExtractionFields(
+const INVOICE_FIELD_LABELS: Record<string, string> = {
+  vendor_name: 'Vendor Name',
+  invoice_number: 'Invoice Number',
+  invoice_date: 'Invoice Date',
+  total_amount: 'Total Amount',
+  subtotal: 'Subtotal',
+  tax_amount: 'Tax Amount',
+  currency: 'Currency',
+  payment_terms: 'Payment Terms',
+};
+
+const PAYMENT_FIELD_LABELS: Record<string, string> = {
+  payer: 'Payer',
+  payee: 'Payee',
+  amount: 'Amount',
+  currency: 'Currency',
+  payment_date: 'Payment Date',
+  reference_number: 'Reference / UTR No.',
+  payment_mode: 'Payment Mode',
+  bank_name: 'Bank',
+};
+
+const SALARY_HEADER_LABELS: Record<string, string> = {
+  company_name: 'Company',
+  month: 'Month',
+  year: 'Year',
+  currency: 'Currency',
+  total_gross: 'Total Gross',
+  total_net: 'Total Net',
+};
+
+const BANK_HEADER_LABELS: Record<string, string> = {
+  bank_name: 'Bank',
+  account_number_masked: 'Account No.',
+  account_holder: 'Account Holder',
+  currency: 'Currency',
+  period_start: 'Period Start',
+  period_end: 'Period End',
+  opening_balance: 'Opening Balance',
+  closing_balance: 'Closing Balance',
+};
+
+function buildFields(
   parsed: Record<string, unknown>,
+  labels: Record<string, string>,
   confidences: Record<string, number> = {},
 ): ExtractionField[] {
-  const fieldLabels: Record<string, string> = {
-    vendorName: 'Vendor Name',
-    invoiceNumber: 'Invoice Number',
-    invoiceDate: 'Invoice Date',
-    amount: 'Total Amount',
-    subtotal: 'Subtotal',
-    taxAmount: 'Tax Amount',
-    currency: 'Currency',
-    paymentTerms: 'Payment Terms',
-    description: 'Description',
-  };
-
-  return Object.entries(parsed)
-    .filter(([key]) => fieldLabels[key])
-    .map(([key, value]) => ({
+  return Object.entries(labels)
+    .filter(([key]) => parsed[key] !== undefined)
+    .map(([key, label]) => ({
       key,
-      label: fieldLabels[key] ?? key,
-      value: value == null ? null : String(value),
+      label,
+      value: parsed[key] == null ? null : String(parsed[key]),
       confidence: confidences[key],
       editable: true,
     }));
 }
+
+function RowTable({
+  rows,
+  columns,
+}: {
+  rows: Record<string, unknown>[];
+  columns: { key: string; label: string }[];
+}) {
+  if (!rows || rows.length === 0) {
+    return <p className="text-sm text-muted-foreground">No rows extracted.</p>;
+  }
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="border-b text-muted-foreground">
+            {columns.map((c) => (
+              <th key={c.key} className="pb-1.5 text-left font-medium pr-3">
+                {c.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {rows.map((row, i) => (
+            <tr key={i}>
+              {columns.map((c) => (
+                <td key={c.key} className="py-1.5 pr-3">
+                  {row[c.key] == null ? '—' : String(row[c.key])}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+const EMPLOYEE_COLUMNS = [
+  { key: 'employee_name', label: 'Name' },
+  { key: 'designation', label: 'Designation' },
+  { key: 'gross_salary', label: 'Gross' },
+  { key: 'total_deductions', label: 'Deductions' },
+  { key: 'net_salary', label: 'Net' },
+];
+
+const BANK_TXN_COLUMNS = [
+  { key: 'date', label: 'Date' },
+  { key: 'description', label: 'Description' },
+  { key: 'debit', label: 'Debit' },
+  { key: 'credit', label: 'Credit' },
+  { key: 'balance', label: 'Balance' },
+  { key: 'suggested_head_name', label: 'Suggested Head' },
+];
 
 export function ReviewDetailClient({ id }: { id: string }) {
   const router = useRouter();
@@ -190,9 +276,28 @@ export function ReviewDetailClient({ id }: { id: string }) {
 
   const parsed = review.extractionResult?.parsedResponse ?? {};
   const confidences = review.extractionResult?.fieldConfidences ?? {};
-  const fields = buildExtractionFields(parsed, confidences);
+  const documentType = review.extractionResult?.extractionJob?.documentType ?? 'INVOICE';
   const documentUrl = review.upload?.id ? uploadsService.fileUrl(review.upload.id) : '';
   const isImage = review.upload?.mimeType?.startsWith('image/');
+  const isInvoice = documentType === 'INVOICE';
+
+  const docTypeLabel: Record<string, string> = {
+    INVOICE: 'Invoice',
+    PAYMENT: 'Payment Receipt',
+    SALARY_REGISTER: 'Salary Register',
+    BANK_STATEMENT: 'Bank Statement',
+  };
+
+  let fields: ExtractionField[] = [];
+  if (documentType === 'INVOICE') {
+    fields = buildFields(parsed, INVOICE_FIELD_LABELS, confidences);
+  } else if (documentType === 'PAYMENT') {
+    fields = buildFields(parsed, PAYMENT_FIELD_LABELS, confidences);
+  } else if (documentType === 'SALARY_REGISTER') {
+    fields = buildFields(parsed, SALARY_HEADER_LABELS, confidences);
+  } else if (documentType === 'BANK_STATEMENT') {
+    fields = buildFields(parsed, BANK_HEADER_LABELS, confidences);
+  }
 
   const subHeads = paymentHeads.find((h) => h.id === selectedHead)?.subHeads ?? [];
 
@@ -263,13 +368,36 @@ export function ReviewDetailClient({ id }: { id: string }) {
 
             <div className="w-3/5 rounded-lg border bg-card overflow-y-auto">
               <div className="p-4 border-b">
-                <h2 className="font-semibold">Extracted Fields</h2>
+                <h2 className="font-semibold">
+                  Extracted Fields
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    ({docTypeLabel[documentType] ?? documentType})
+                  </span>
+                </h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Edit any field before approving. Changes are tracked in the audit log.
                 </p>
               </div>
-              <div className="p-4">
+              <div className="p-4 space-y-6">
                 <ExtractionForm fields={fields} onChange={handleFieldChange} />
+                {documentType === 'SALARY_REGISTER' && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Employee Rows</p>
+                    <RowTable
+                      rows={(parsed.employee_rows as Record<string, unknown>[]) ?? []}
+                      columns={EMPLOYEE_COLUMNS}
+                    />
+                  </div>
+                )}
+                {documentType === 'BANK_STATEMENT' && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Transactions</p>
+                    <RowTable
+                      rows={(parsed.transaction_rows as Record<string, unknown>[]) ?? []}
+                      columns={BANK_TXN_COLUMNS}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -278,43 +406,49 @@ export function ReviewDetailClient({ id }: { id: string }) {
         <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Approve Invoice</DialogTitle>
+              <DialogTitle>Approve {docTypeLabel[documentType] ?? 'Document'}</DialogTitle>
               <DialogDescription>
-                Assign a payment category and confirm approval. This will create a transaction.
+                {isInvoice
+                  ? 'Assign a payment category and confirm approval. This will create a transaction.'
+                  : 'Confirm approval. The record will be marked as accepted.'}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-2">
-              <div className="space-y-1.5">
-                <Label>Payment Head</Label>
-                <Select value={selectedHead} onValueChange={setSelectedHead}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select payment head…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paymentHeads.map((h) => (
-                      <SelectItem key={h.id} value={h.id}>
-                        {h.code} – {h.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {subHeads.length > 0 && (
-                <div className="space-y-1.5">
-                  <Label>Payment Sub-Head</Label>
-                  <Select value={selectedSubHead} onValueChange={setSelectedSubHead}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select sub-head…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subHeads.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.code} – {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {isInvoice && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label>Payment Head</Label>
+                    <Select value={selectedHead} onValueChange={setSelectedHead}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select payment head…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paymentHeads.map((h) => (
+                          <SelectItem key={h.id} value={h.id}>
+                            {h.code} – {h.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {subHeads.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label>Payment Sub-Head</Label>
+                      <Select value={selectedSubHead} onValueChange={setSelectedSubHead}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select sub-head…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subHeads.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.code} – {s.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </>
               )}
               {actionError && <p className="text-sm text-destructive">{actionError}</p>}
             </div>
@@ -332,7 +466,7 @@ export function ReviewDetailClient({ id }: { id: string }) {
         <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Reject Invoice</DialogTitle>
+              <DialogTitle>Reject {docTypeLabel[documentType] ?? 'Document'}</DialogTitle>
               <DialogDescription>
                 Select a rejection reason. The company will be notified.
               </DialogDescription>

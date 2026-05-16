@@ -15,6 +15,7 @@ import {
   Building2,
   Users,
 } from 'lucide-react';
+import { NotificationBell } from './notification-bell';
 
 const NAV_ITEMS: NavItem[] = [
   {
@@ -80,6 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         onNavigate: (href) => router.push(href),
         logo: <span className="font-bold text-primary text-lg tracking-tight">FinBridge</span>,
       }}
+      headerExtra={<NotificationBell />}
       userMenu={
         user
           ? {
