@@ -45,15 +45,16 @@ export const transactionsService = {
     return data;
   },
 
-  exportCsvUrl(filters: TransactionFilters = {}): string {
-    const params = new URLSearchParams(
-      Object.entries(filters)
-        .filter(([, v]) => v != null)
-        .map(([k, v]) => [k, String(v)]),
-    );
-    const base =
-      (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) ||
-      'http://localhost:3001/api/v1';
-    return `${base}/transactions/export?${params}`;
+  async exportCsv(filters: TransactionFilters = {}): Promise<void> {
+    const response = await apiClient.get('/transactions/export', {
+      params: filters,
+      responseType: 'blob',
+    });
+    const url = URL.createObjectURL(new Blob([response.data as BlobPart], { type: 'text/csv' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'transactions.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   },
 };

@@ -63,16 +63,14 @@ export default function TransactionsPage() {
                 {total} approved transaction{total !== 1 ? 's' : ''}
               </p>
             </div>
-            <Button variant="outline" size="sm" asChild>
-              <a
-                href={transactionsService.exportCsvUrl({
-                  sortBy: 'transactionDate',
-                  sortOrder: 'DESC',
-                })}
-                download
-              >
-                Export CSV
-              </a>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                transactionsService.exportCsv({ sortBy: 'transactionDate', sortOrder: 'DESC' })
+              }
+            >
+              Export CSV
             </Button>
           </div>
 
