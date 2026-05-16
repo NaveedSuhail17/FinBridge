@@ -35,7 +35,12 @@ export class SalaryRegisterExtractionService {
 
     let parsed: SalaryRegisterExtraction;
     try {
-      const json = JSON.parse(rawResponse);
+      const json = JSON.parse(
+        rawResponse
+          .replace(/^```(?:json)?\s*/i, '')
+          .replace(/\s*```$/i, '')
+          .trim(),
+      );
       parsed = SalaryRegisterExtractionSchema.parse(json);
     } catch {
       throw new Error(

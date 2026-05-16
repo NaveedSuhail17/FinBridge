@@ -35,7 +35,12 @@ export class BankStatementExtractionService {
 
     let parsed: BankStatementExtraction;
     try {
-      const json = JSON.parse(rawResponse);
+      const json = JSON.parse(
+        rawResponse
+          .replace(/^```(?:json)?\s*/i, '')
+          .replace(/\s*```$/i, '')
+          .trim(),
+      );
       parsed = BankStatementExtractionSchema.parse(json);
     } catch {
       throw new Error(

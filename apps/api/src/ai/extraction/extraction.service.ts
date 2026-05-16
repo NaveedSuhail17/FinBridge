@@ -75,12 +75,19 @@ export class ExtractionService {
         upload.filePath,
         DOCUMENT_CLASSIFICATION_PROMPT,
       );
-      const classificationJson = JSON.parse(
-        classificationRaw
-          .replace(/^```(?:json)?\s*/i, '')
-          .replace(/\s*```$/i, '')
-          .trim(),
-      );
+      let classificationJson: unknown;
+      try {
+        classificationJson = JSON.parse(
+          classificationRaw
+            .replace(/^```(?:json)?\s*/i, '')
+            .replace(/\s*```$/i, '')
+            .trim(),
+        );
+      } catch {
+        throw new Error(
+          `Failed to parse document classification response: ${classificationRaw.slice(0, 200)}`,
+        );
+      }
       const classification = ClassificationSchema.parse(classificationJson);
 
       // Update Upload.fileType from classifier result (classifier wins over user hint)

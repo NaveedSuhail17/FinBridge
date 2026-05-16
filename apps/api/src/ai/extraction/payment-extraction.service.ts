@@ -26,7 +26,12 @@ export class PaymentExtractionService {
 
     let parsed: PaymentExtraction;
     try {
-      const json = JSON.parse(rawResponse);
+      const json = JSON.parse(
+        rawResponse
+          .replace(/^```(?:json)?\s*/i, '')
+          .replace(/\s*```$/i, '')
+          .trim(),
+      );
       parsed = PaymentExtractionSchema.parse(json);
     } catch {
       throw new Error(`Failed to parse payment extraction response: ${rawResponse.slice(0, 200)}`);
