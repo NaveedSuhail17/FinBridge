@@ -24,12 +24,10 @@ FinBridge automates invoice scanning using **Claude Vision**, routes extracted t
    - [6. Platform Admin Panel](#6-platform-admin-panel)
    - [7. Bulk Upload (Bank Statements & Salary Registers)](#7-bulk-upload-bank-statements--salary-registers)
    - [8. Notifications](#8-notifications)
-   - [9. Swagger API Explorer](#9-swagger-api-explorer)
-6. [API Quick Reference](#api-quick-reference)
-7. [Demo Assets Reference](#demo-assets-reference)
-8. [Architecture Overview](#architecture-overview)
-9. [Repository Structure](#repository-structure)
-10. [Troubleshooting](#troubleshooting)
+6. [Demo Assets Reference](#demo-assets-reference)
+7. [Architecture Overview](#architecture-overview)
+8. [Repository Structure](#repository-structure)
+9. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -80,8 +78,8 @@ The fastest path: one command builds and starts all four services (PostgreSQL, R
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/<your-org>/finbridge.git
-cd finbridge
+git clone https://github.com/NaveedSuhail17/FinBridge.git
+cd FinBridge
 
 # 2. Configure environment
 cp .env.example .env
@@ -124,8 +122,8 @@ Use this if you want hot-reload or want to run tests.
 
 ```bash
 # 1. Clone
-git clone https://github.com/<your-org>/finbridge.git
-cd finbridge
+git clone https://github.com/NaveedSuhail17/FinBridge.git
+cd FinBridge
 
 # 2. Install all workspace dependencies
 pnpm install
@@ -290,12 +288,12 @@ Login as **`user@company.com`** or **`accountant@finbridge.com`**.
 
 Navigate to **Dashboard** to see live charts powered by the seeded transactions:
 
-| Chart             | Endpoint                                         | What it shows                             |
-| ----------------- | ------------------------------------------------ | ----------------------------------------- |
-| Cash Flow         | `GET /api/v1/reports/insights/cash-flow`         | Monthly spend, Jan–Dec current year       |
-| Top Expense Heads | `GET /api/v1/reports/insights/top-expense-heads` | Top GL categories by spend (last 30 days) |
-| Upload Funnel     | `GET /api/v1/reports/insights/upload-funnel`     | Uploads → Extracted → Reviewed → Approved |
-| Vendor Summary    | `GET /api/v1/reports/insights/vendor-summary`    | Top vendors by total spend                |
+| Chart             | What it shows                             |
+| ----------------- | ----------------------------------------- |
+| Cash Flow         | Monthly spend, Jan–Dec current year       |
+| Top Expense Heads | Top GL categories by spend (last 30 days) |
+| Upload Funnel     | Uploads → Extracted → Reviewed → Approved |
+| Vendor Summary    | Top vendors by total spend                |
 
 #### Generate a Report
 
@@ -305,28 +303,6 @@ Navigate to **Dashboard** to see live charts powered by the seeded transactions:
 4. Click **Generate** — the report renders as a chart + table.
 5. Click **Share** to generate a time-limited shareable link (token-based; configurable expiry).
 6. Click **Download** to export as PDF/CSV.
-
-#### Example — Cash Flow via API
-
-```bash
-# Replace TOKEN with a real JWT from the login response
-curl http://localhost:3001/api/v1/reports/insights/cash-flow \
-  -H "Authorization: Bearer TOKEN"
-
-# Response:
-{
-  "success": true,
-  "data": {
-    "year": 2026,
-    "months": [
-      { "month": 2, "label": "Feb", "total": 342844.74 },
-      { "month": 3, "label": "Mar", "total": 467775.81 },
-      { "month": 4, "label": "Apr", "total": 891787.25 },
-      { "month": 5, "label": "May", "total": 203562.47 }
-    ]
-  }
-}
-```
 
 ---
 
@@ -355,16 +331,6 @@ Login as **`user@company.com`**.
 3. Upload `demo-assets/salary-registers/salary-register-q1-fy2024.pdf` — classified as a salary register; each employee row becomes a structured record.
 4. View the parsed results under **Bank Statements** and **Salary Registers** in the sidebar.
 
-```bash
-# API: list bank statement records
-curl http://localhost:3001/api/v1/bank-statements \
-  -H "Authorization: Bearer TOKEN"
-
-# API: list salary register records
-curl http://localhost:3001/api/v1/salary-registers \
-  -H "Authorization: Bearer TOKEN"
-```
-
 ---
 
 ### 8. Notifications
@@ -376,135 +342,6 @@ The notification bell in the top-right corner shows:
 - Review approved/rejected (for company users)
 
 Click the bell to open the notification panel. Each notification links to the relevant resource.
-
-```bash
-# API: fetch notifications
-curl http://localhost:3001/api/v1/notifications \
-  -H "Authorization: Bearer TOKEN"
-```
-
----
-
-### 9. Swagger API Explorer
-
-The full REST API is documented at **http://localhost:3001/api/docs**.
-
-1. Open the Swagger UI.
-2. Click **Authorize** → enter `Bearer <token>` (get a token via the login curl below).
-3. Expand any endpoint group and click **Try it out** to make live requests.
-
-**Get a token via curl:**
-
-```bash
-curl -s -X POST http://localhost:3001/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@company.com","password":"Password@123"}'
-
-# Response:
-{
-  "success": true,
-  "data": {
-    "accessToken": "eyJhbGci...",
-    "refreshToken": "efe29e1a...",
-    "user": {
-      "email": "user@company.com",
-      "roleName": "COMPANY_USER",
-      "tenantId": "2559ea51-..."
-    }
-  }
-}
-```
-
----
-
-## API Quick Reference
-
-All endpoints are prefixed `/api/v1`. All except `/auth/login` and `/auth/refresh` require `Authorization: Bearer <token>`.
-
-> **Rate limit:** 30 requests / 60 seconds per IP on all endpoints.
-
-### Authentication
-
-| Method | Path            | Description                                   |
-| ------ | --------------- | --------------------------------------------- |
-| `POST` | `/auth/login`   | Login, returns `accessToken` + `refreshToken` |
-| `POST` | `/auth/refresh` | Refresh access token                          |
-| `POST` | `/auth/logout`  | Invalidate refresh token                      |
-| `GET`  | `/auth/me`      | Current user profile                          |
-
-### Uploads & AI Extraction
-
-| Method | Path                 | Description                                    |
-| ------ | -------------------- | ---------------------------------------------- |
-| `POST` | `/uploads`           | Upload one or more files (multipart/form-data) |
-| `GET`  | `/uploads`           | List uploads for the current tenant            |
-| `GET`  | `/uploads/:id`       | Single upload detail                           |
-| `GET`  | `/ai/extract/:jobId` | Poll extraction job status                     |
-
-**Upload example:**
-
-```bash
-curl -X POST http://localhost:3001/api/v1/uploads \
-  -H "Authorization: Bearer TOKEN" \
-  -F "files=@demo-assets/invoices/invoice-01.pdf" \
-  -F "fileType=INVOICE"
-```
-
-### Review Workflow
-
-| Method  | Path                   | Description                                |
-| ------- | ---------------------- | ------------------------------------------ |
-| `GET`   | `/reviews/pending`     | Pending reviews for current accountant     |
-| `GET`   | `/reviews/:id`         | Review detail (fields + confidence scores) |
-| `POST`  | `/reviews/:id/approve` | Approve with optional field edits          |
-| `POST`  | `/reviews/:id/reject`  | Reject with reason                         |
-| `PATCH` | `/reviews/:id/edit`    | Edit extracted fields without approving    |
-
-**Approve example:**
-
-```bash
-curl -X POST http://localhost:3001/api/v1/reviews/<REVIEW_ID>/approve \
-  -H "Authorization: Bearer ACCOUNTANT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "paymentHeadId": "ff3ff01b-fc8f-46da-987e-6af3287cf44a",
-    "paymentSubHeadId": "1e1dd621-bfb3-48b2-a7ad-ddc4e36141ba",
-    "notes": "Verified against PO-2024-0089"
-  }'
-```
-
-### Transactions
-
-| Method | Path                | Description                    |
-| ------ | ------------------- | ------------------------------ |
-| `GET`  | `/transactions`     | List transactions (filterable) |
-| `GET`  | `/transactions/:id` | Single transaction detail      |
-
-**Filter example:**
-
-```bash
-curl "http://localhost:3001/api/v1/transactions?startDate=2026-04-01&endDate=2026-04-30&paymentHeadId=ff3ff01b-fc8f-46da-987e-6af3287cf44a" \
-  -H "Authorization: Bearer TOKEN"
-```
-
-### Reports & Insights
-
-| Method | Path                                  | Description                      |
-| ------ | ------------------------------------- | -------------------------------- |
-| `GET`  | `/reports/insights/cash-flow`         | Monthly spend for current year   |
-| `GET`  | `/reports/insights/top-expense-heads` | Top GL categories (last 30 days) |
-| `GET`  | `/reports/insights/upload-funnel`     | Upload → Approved funnel stats   |
-| `GET`  | `/reports/insights/vendor-summary`    | Top vendors by spend             |
-| `POST` | `/reports/generate`                   | Generate a named report          |
-| `GET`  | `/reports/:id/download`               | Download report as PDF/CSV       |
-| `POST` | `/reports/:id/share`                  | Create shareable link            |
-
-### Payment Heads
-
-| Method | Path                           | Description                         |
-| ------ | ------------------------------ | ----------------------------------- |
-| `GET`  | `/payment-heads`               | GL category list for current tenant |
-| `GET`  | `/payment-heads/:id/sub-heads` | Sub-categories under a head         |
 
 ---
 
