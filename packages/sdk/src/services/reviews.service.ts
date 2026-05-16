@@ -27,7 +27,7 @@ export interface ApproveReviewDto {
 }
 
 export interface RejectReviewDto {
-  reason: string;
+  rejectionReason: string;
   notes?: string;
 }
 

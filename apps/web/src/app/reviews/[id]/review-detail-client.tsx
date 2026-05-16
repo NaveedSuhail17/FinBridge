@@ -220,7 +220,10 @@ export function ReviewDetailClient({ id }: { id: string }) {
     setSubmitting(true);
     setActionError(null);
     try {
-      const dto: RejectReviewDto = { reason: rejectReason, notes: rejectNotes || undefined };
+      const dto: RejectReviewDto = {
+        rejectionReason: rejectReason,
+        notes: rejectNotes || undefined,
+      };
       await reviewsService.reject(id, dto);
       setShowRejectDialog(false);
       router.push('/reviews');
