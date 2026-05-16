@@ -120,6 +120,11 @@ export class UploadsService {
   async findAll(tenantId: string): Promise<Upload[]> {
     return this.uploadRepo.find({
       where: { tenantId },
+      relations: [
+        'extractionJob',
+        'extractionJob.extractionResult',
+        'extractionJob.extractionResult.review',
+      ],
       order: { createdAt: 'DESC' },
     });
   }

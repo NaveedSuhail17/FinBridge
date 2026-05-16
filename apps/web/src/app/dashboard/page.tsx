@@ -1,16 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuthStore, insightsService } from '@finbridge/sdk';
+import Link from 'next/link';
+import { useAuthStore, insightsService, uploadsService } from '@finbridge/sdk';
 import type {
   CashFlowResponse,
   TopExpenseHeadsResponse,
   UploadFunnelResponse,
   VendorSummaryResponse,
 } from '@finbridge/sdk';
-import { DashboardCard, ActivityFeed } from '@finbridge/ui';
+import { DashboardCard, ActivityFeed, Badge, Button } from '@finbridge/ui';
 import type { ActivityItem } from '@finbridge/ui';
-import { UserRole } from '@finbridge/types';
+import { UserRole, ExtractionStatus, ReviewStatus } from '@finbridge/types';
+import type { Upload } from '@finbridge/types';
 import {
   AreaChart,
   Area,
@@ -30,7 +32,6 @@ import {
   ClipboardCheck,
   TrendingUp,
   Upload,
-  FileText,
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
@@ -255,6 +256,24 @@ const ACTIVITY_ITEMS: ActivityItem[] = [
   },
 ];
 
+// ─── Upload status helper ─────────────────────────────────────────────────────
+function deriveUploadStatus(upload: Upload): {
+  label: string;
+  variant: 'default' | 'secondary' | 'destructive';
+} {
+  const job = upload.extractionJob;
+  if (!job || job.status === ExtractionStatus.QUEUED)
+    return { label: 'Queued', variant: 'secondary' };
+  if (job.status === ExtractionStatus.PROCESSING)
+    return { label: 'Processing', variant: 'secondary' };
+  if (job.status === ExtractionStatus.FAILED) return { label: 'Failed', variant: 'destructive' };
+  const review = job.extractionResult?.review;
+  if (!review) return { label: 'Pending Review', variant: 'secondary' };
+  if (review.status === ReviewStatus.APPROVED) return { label: 'Approved', variant: 'default' };
+  if (review.status === ReviewStatus.REJECTED) return { label: 'Rejected', variant: 'destructive' };
+  return { label: 'Pending Review', variant: 'secondary' };
+}
+
 // ─── Role dashboards ──────────────────────────────────────────────────────────
 function PlatformAdminDashboard() {
   return (
@@ -335,39 +354,128 @@ function AccountantDashboard() {
 }
 
 function CompanyUserDashboard() {
+  const [funnel, setFunnel] = useState<UploadFunnelResponse | null>(null);
+  const [recentUploads, setRecentUploads] = useState<Upload[]>([]);
+  const [uploadsLoading, setUploadsLoading] = useState(true);
+
+  useEffect(() => {
+    insightsService
+      .getUploadFunnel()
+      .then(setFunnel)
+      .catch(() => setFunnel(null));
+    uploadsService
+      .list()
+      .then((data) => setRecentUploads(data.slice(0, 5)))
+      .catch(() => setRecentUploads([]))
+      .finally(() => setUploadsLoading(false));
+  }, []);
+
+  const v = (n: number | undefined) => (n === undefined ? '—' : String(n));
+  const processing = funnel ? Math.max(0, funnel.uploaded - funnel.extracted) : undefined;
+  const pendingReview = funnel ? Math.max(0, funnel.extracted - funnel.reviewed) : undefined;
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">My Dashboard</h1>
-        <p className="text-muted-foreground">Track your invoice uploads and transaction status</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">My Dashboard</h1>
+          <p className="text-muted-foreground">Track your invoice uploads and transaction status</p>
+        </div>
+        <Link href="/uploads">
+          <Button size="sm">
+            <Upload className="h-4 w-4 mr-1.5" />
+            New Upload
+          </Button>
+        </Link>
       </div>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <DashboardCard
-          title="Uploaded This Month"
-          value="23"
+          title="Total Uploaded"
+          value={v(funnel?.uploaded)}
           icon={<Upload className="h-4 w-4" />}
-          delta={15}
         />
-        <DashboardCard title="Processing" value="2" icon={<AlertCircle className="h-4 w-4" />} />
         <DashboardCard
-          title="Approved Transactions"
-          value="18"
+          title="Processing"
+          value={v(processing)}
+          icon={<AlertCircle className="h-4 w-4" />}
+        />
+        <DashboardCard
+          title="Pending Review"
+          value={v(pendingReview)}
+          icon={<ClipboardCheck className="h-4 w-4" />}
+        />
+        <DashboardCard
+          title="Approved"
+          value={v(funnel?.approved)}
           icon={<CheckCircle className="h-4 w-4" />}
-          delta={20}
-        />
-        <DashboardCard
-          title="Available Reports"
-          value="5"
-          icon={<FileText className="h-4 w-4" />}
         />
       </div>
+
+      <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <h2 className="font-semibold">Recent Uploads</h2>
+          <Link href="/uploads">
+            <Button variant="ghost" size="sm">
+              View all
+            </Button>
+          </Link>
+        </div>
+        {uploadsLoading ? (
+          <p className="px-4 py-6 text-sm text-muted-foreground">Loading…</p>
+        ) : recentUploads.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-muted-foreground">
+            No uploads yet.{' '}
+            <Link href="/uploads" className="underline underline-offset-2">
+              Upload your first document
+            </Link>
+            .
+          </p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40">
+              <tr className="border-b text-muted-foreground">
+                <th className="px-4 py-3 text-left font-medium">File</th>
+                <th className="px-4 py-3 text-left font-medium">Type</th>
+                <th className="px-4 py-3 text-left font-medium">Date</th>
+                <th className="px-4 py-3 text-left font-medium">Status</th>
+                <th className="px-4 py-3 text-right font-medium">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {recentUploads.map((u) => {
+                const { label, variant } = deriveUploadStatus(u);
+                const reviewId = u.extractionJob?.extractionResult?.review?.id;
+                return (
+                  <tr key={u.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-3 font-medium max-w-[220px] truncate">{u.fileName}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{u.fileType}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {new Date(u.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant={variant}>{label}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {reviewId && (
+                        <Link href={`/reviews/${reviewId}`}>
+                          <Button variant="ghost" size="sm">
+                            View
+                          </Button>
+                        </Link>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <CashFlowChart />
         <TopExpenseHeadsChart />
-      </div>
-      <div className="rounded-lg border bg-card p-6">
-        <h2 className="mb-4 font-semibold">Recent Activity</h2>
-        <ActivityFeed items={ACTIVITY_ITEMS} />
       </div>
     </div>
   );

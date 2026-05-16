@@ -93,6 +93,18 @@ export interface Upload {
   fileType: FileType;
   uploadedBy: string;
   createdAt: Date;
+  extractionJob?: {
+    id: string;
+    status: ExtractionStatus;
+    documentType: FileType | null;
+    extractionResult?: {
+      id: string;
+      review?: {
+        id: string;
+        status: ReviewStatus;
+      };
+    };
+  };
 }
 
 export interface ExtractionJob {
