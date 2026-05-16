@@ -47,4 +47,4 @@ RUN mkdir -p uploads && chown nestjs:nodejs uploads
 USER nestjs
 EXPOSE 3001
 
-CMD ["node", "dist/main"]
+CMD ["node", "dist/apps/api/src/main"]
