@@ -20,13 +20,13 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
       router.replace(`/auth/login?returnUrl=${encodeURIComponent(pathname)}`);
       return;
     }
-    if (allowedRoles && user && !allowedRoles.includes(user.roleName)) {
+    if (allowedRoles && user && !allowedRoles.includes(user.role)) {
       router.replace('/dashboard');
     }
   }, [token, user, router, pathname, allowedRoles]);
 
   if (!token || !user) return null;
-  if (allowedRoles && user && !allowedRoles.includes(user.roleName)) return null;
+  if (allowedRoles && user && !allowedRoles.includes(user.role)) return null;
 
   return <>{children}</>;
 }

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like } from 'typeorm';
+import { Repository } from 'typeorm';
 
 const ALLOWED_SORT_COLS = ['transactionDate', 'amount', 'vendorName', 'createdAt'] as const;
 type AllowedSortCol = (typeof ALLOWED_SORT_COLS)[number];

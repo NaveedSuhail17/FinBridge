@@ -138,7 +138,7 @@ describe('AuthService', () => {
 
   describe('logout', () => {
     it('deletes the refresh token from redis', async () => {
-      await service.logout('some-token');
+      await service.logout('some-token', 'user-id-123');
       expect(mockRedis.del).toHaveBeenCalledWith('refresh:some-token');
     });
   });
