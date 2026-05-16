@@ -95,7 +95,7 @@ All other values in `.env.example` are correct for Docker out of the box — no 
 
 ```bash
 # 3. Build and start everything (first run ~3–5 min)
-docker compose up --build -d
+docker compose up --build
 
 # Wait until you see:
 #   finbridge-api   | FinBridge API running on http://localhost:3001
