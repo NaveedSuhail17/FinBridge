@@ -1,7 +1,8 @@
-import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/authorization/roles.decorator';
 import { RolesGuard } from '../common/authorization/roles.guard';
@@ -11,6 +12,16 @@ import { RolesGuard } from '../common/authorization/roles.guard';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Post()
+  @UseGuards(RolesGuard)
+  @Roles('PLATFORM_ADMIN')
+  @ApiOperation({ summary: 'Create a new user (platform admin only)' })
+  @ApiResponse({ status: 201, description: 'User created' })
+  async createUser(@Body() dto: CreateUserDto) {
+    const data = await this.usersService.createUser(dto);
+    return { success: true, data };
+  }
 
   @Get()
   @UseGuards(RolesGuard)

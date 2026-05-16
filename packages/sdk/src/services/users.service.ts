@@ -26,7 +26,20 @@ export interface AdminUserEntry {
   tenant: { id: string; name: string; type: string } | null;
 }
 
+export interface CreateUserDto {
+  name: string;
+  email: string;
+  password: string;
+  tenantId: string;
+  roleName: 'PLATFORM_ADMIN' | 'ACCOUNTING_FIRM_ADMIN' | 'ACCOUNTANT' | 'COMPANY_USER';
+}
+
 export const usersService = {
+  async createUser(dto: CreateUserDto): Promise<AdminUserEntry> {
+    const { data } = await apiClient.post<AdminUserEntry>('/users', dto);
+    return data;
+  },
+
   async listAll(): Promise<AdminUserEntry[]> {
     const { data } = await apiClient.get<AdminUserEntry[]>('/users');
     return data;

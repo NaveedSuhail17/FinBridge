@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,6 +13,7 @@ import { UserTenant } from '../database/entities/user-tenant.entity';
 import { Tenant } from '../database/entities/tenant.entity';
 import { Role } from '../database/entities/role.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 
 const BCRYPT_ROUNDS = 10;
 
@@ -55,6 +57,36 @@ export class UsersService {
       createdAt: user.createdAt,
       tenant: tenant ? { id: tenant.id, name: tenant.name, type: tenant.type } : null,
       role: membership?.role ? { id: membership.role.id, name: membership.role.name } : null,
+    };
+  }
+
+  async createUser(dto: CreateUserDto) {
+    const existing = await this.userRepo.findOneBy({ email: dto.email.toLowerCase() });
+    if (existing) throw new ConflictException('Email already registered');
+
+    const tenant = await this.tenantRepo.findOneBy({ id: dto.tenantId, isActive: true });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const role = await this.roleRepo.findOneBy({ name: dto.roleName });
+    if (!role) throw new NotFoundException(`Role ${dto.roleName} not found`);
+
+    const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
+    const user = await this.userRepo.save(
+      this.userRepo.create({ email: dto.email.toLowerCase(), passwordHash, name: dto.name }),
+    );
+
+    await this.userTenantRepo.save(
+      this.userTenantRepo.create({ userId: user.id, tenantId: tenant.id, roleId: role.id }),
+    );
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      role: role.name,
+      tenant: { id: tenant.id, name: tenant.name, type: tenant.type },
     };
   }
 

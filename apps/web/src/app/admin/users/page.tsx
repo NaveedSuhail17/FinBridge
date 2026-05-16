@@ -1,12 +1,35 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usersService } from '@finbridge/sdk';
-import type { AdminUserEntry } from '@finbridge/sdk';
-import { Badge } from '@finbridge/ui';
+import { usersService, tenantsService } from '@finbridge/sdk';
+import type { AdminUserEntry, CreateUserDto, TenantItem } from '@finbridge/sdk';
+import {
+  Badge,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+  Input,
+  Label,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@finbridge/ui';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { AppShell } from '@/components/app-shell';
-import { Users } from 'lucide-react';
+import { Users, Plus } from 'lucide-react';
+
+const ROLES = [
+  { value: 'PLATFORM_ADMIN', label: 'Platform Admin' },
+  { value: 'ACCOUNTING_FIRM_ADMIN', label: 'Firm Admin' },
+  { value: 'ACCOUNTANT', label: 'Accountant' },
+  { value: 'COMPANY_USER', label: 'Company User' },
+] as const;
 
 const ROLE_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
   PLATFORM_ADMIN: 'destructive',
@@ -21,16 +44,155 @@ const TENANT_TYPE_LABEL: Record<string, string> = {
   COMPANY: 'Company',
 };
 
+const EMPTY_FORM: CreateUserDto = {
+  name: '',
+  email: '',
+  password: '',
+  tenantId: '',
+  roleName: 'COMPANY_USER',
+};
+
+function CreateUserDialog({
+  open,
+  onOpenChange,
+  tenants,
+  onCreated,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  tenants: TenantItem[];
+  onCreated: (user: AdminUserEntry) => void;
+}) {
+  const [form, setForm] = useState<CreateUserDto>(EMPTY_FORM);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const set = (k: keyof CreateUserDto, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handleSubmit = async () => {
+    if (!form.name || !form.email || !form.password || !form.tenantId) {
+      setError('All fields are required.');
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const created = await usersService.createUser(form);
+      onCreated(created);
+      onOpenChange(false);
+      setForm(EMPTY_FORM);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(typeof msg === 'string' ? msg : 'Failed to create user.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create User</DialogTitle>
+          <DialogDescription>Add a new user and assign them a tenant and role.</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="cu-name">Full Name</Label>
+            <Input
+              id="cu-name"
+              placeholder="Jane Doe"
+              value={form.name}
+              onChange={(e) => set('name', e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="cu-email">Email</Label>
+            <Input
+              id="cu-email"
+              type="email"
+              placeholder="jane@example.com"
+              value={form.email}
+              onChange={(e) => set('email', e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="cu-password">Password</Label>
+            <Input
+              id="cu-password"
+              type="password"
+              placeholder="Min. 8 characters"
+              value={form.password}
+              onChange={(e) => set('password', e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Tenant</Label>
+            <Select value={form.tenantId} onValueChange={(v) => set('tenantId', v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select tenant…" />
+              </SelectTrigger>
+              <SelectContent>
+                {tenants.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name}
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      ({TENANT_TYPE_LABEL[t.type] ?? t.type})
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Role</Label>
+            <Select
+              value={form.roleName}
+              onValueChange={(v) => set('roleName', v as CreateUserDto['roleName'])}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROLES.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={submitting}>
+            {submitting ? 'Creating…' : 'Create User'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUserEntry[]>([]);
+  const [tenants, setTenants] = useState<TenantItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
-    usersService
-      .listAll()
-      .then(setUsers)
-      .catch(() => setUsers([]))
+    Promise.all([usersService.listAll(), tenantsService.list()])
+      .then(([u, t]) => {
+        setUsers(u);
+        setTenants(t);
+      })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
@@ -49,9 +211,15 @@ export default function AdminUsersPage() {
               <h1 className="text-2xl font-bold tracking-tight">Users</h1>
               <p className="text-muted-foreground">All registered users across all tenants</p>
             </div>
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Users className="h-4 w-4" />
-              {loading ? '…' : `${users.length} total`}
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Users className="h-4 w-4" />
+                {loading ? '…' : `${users.length} total`}
+              </span>
+              <Button size="sm" onClick={() => setShowCreate(true)}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                Create User
+              </Button>
             </div>
           </div>
 
@@ -127,6 +295,13 @@ export default function AdminUsersPage() {
             )}
           </div>
         </div>
+
+        <CreateUserDialog
+          open={showCreate}
+          onOpenChange={setShowCreate}
+          tenants={tenants}
+          onCreated={(u) => setUsers((prev) => [u, ...prev])}
+        />
       </AppShell>
     </ProtectedRoute>
   );

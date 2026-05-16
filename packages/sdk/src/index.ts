@@ -14,8 +14,16 @@ export type {
 export { authService } from './services/auth.service';
 export type { LoginDto, RegisterDto, AcceptInviteDto } from './services/auth.service';
 
+export { tenantsService } from './services/tenants.service';
+export type { TenantItem } from './services/tenants.service';
+
 export { usersService } from './services/users.service';
-export type { UserProfile, UpdateUserDto, AdminUserEntry } from './services/users.service';
+export type {
+  UserProfile,
+  UpdateUserDto,
+  AdminUserEntry,
+  CreateUserDto,
+} from './services/users.service';
 
 export { companiesService } from './services/companies.service';
 export type {
