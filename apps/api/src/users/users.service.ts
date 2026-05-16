@@ -58,6 +58,31 @@ export class UsersService {
     };
   }
 
+  async listAll() {
+    const memberships = await this.userTenantRepo.find({ relations: ['role'] });
+    const userIds = [...new Set(memberships.map((m) => m.userId))];
+    const users = await this.userRepo.find({ where: userIds.map((id) => ({ id })) });
+    const tenantIds = [...new Set(memberships.map((m) => m.tenantId))];
+    const tenants = await this.tenantRepo.find({ where: tenantIds.map((id) => ({ id })) });
+
+    const tenantMap = new Map(tenants.map((t) => [t.id, t]));
+    const membershipMap = new Map(memberships.map((m) => [m.userId, m]));
+
+    return users.map((u) => {
+      const m = membershipMap.get(u.id);
+      const t = m ? tenantMap.get(m.tenantId) : undefined;
+      return {
+        id: u.id,
+        email: u.email,
+        name: u.name,
+        isActive: u.isActive,
+        createdAt: u.createdAt,
+        role: m?.role?.name ?? null,
+        tenant: t ? { id: t.id, name: t.name, type: t.type } : null,
+      };
+    });
+  }
+
   async update(userId: string, dto: UpdateUserDto): Promise<PlatformUser> {
     const user = await this.findById(userId);
 

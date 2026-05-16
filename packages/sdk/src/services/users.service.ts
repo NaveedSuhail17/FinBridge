@@ -16,7 +16,22 @@ export interface UpdateUserDto {
   newPassword?: string;
 }
 
+export interface AdminUserEntry {
+  id: string;
+  email: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+  role: string | null;
+  tenant: { id: string; name: string; type: string } | null;
+}
+
 export const usersService = {
+  async listAll(): Promise<AdminUserEntry[]> {
+    const { data } = await apiClient.get<AdminUserEntry[]>('/users');
+    return data;
+  },
+
   async getMe(): Promise<UserProfile> {
     const { data } = await apiClient.get<UserProfile>('/users/me');
     return data;
