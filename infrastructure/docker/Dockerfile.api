@@ -24,8 +24,12 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY . .
 
+# Build workspace packages first, then the API
 RUN pnpm --filter @finbridge/prompts build
 RUN pnpm --filter @finbridge/api build
+
+# Produce a standalone deployment folder with all node_modules resolved (no symlinks)
+RUN pnpm --filter @finbridge/api deploy --prod /tmp/api-deploy
 
 # ── Stage 3: runner ───────────────────────────────────────────────────────────
 FROM node:22-alpine AS runner
@@ -37,9 +41,7 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
 
 COPY --from=builder --chown=nestjs:nodejs /app/apps/api/dist ./dist
-COPY --from=builder --chown=nestjs:nodejs /app/apps/api/node_modules ./node_modules
-# Workspace packages are referenced via symlinks in node_modules; copy source so they resolve
-COPY --from=builder --chown=nestjs:nodejs /app/packages ./packages
+COPY --from=builder --chown=nestjs:nodejs /tmp/api-deploy/node_modules ./node_modules
 RUN mkdir -p uploads && chown nestjs:nodejs uploads
 
 USER nestjs
